@@ -1,14 +1,110 @@
-# 🧠 Virtual Persona System (VPG Phase 1)
+# 🧠 VPG MVP - Virtual Persona Generator
 
-**Virtual Persona Generator (VPG)** is a two-part AI-powered system designed to create rich, structured virtual characters and generate conversations that authentically reflect their identity. This project aims to power use cases such as AI roleplay, interview simulators, storytelling engines, and training simulations.
+**Cost-optimized MVP** for generating structured virtual personas from simple text descriptions. Built for quick deployment and minimal cost.
 
 ---
 
-## 🔧 Modules
+## 🚀 Quick Start (MVP)
 
-### 1. 🧬 Persona Generator
-Generate a detailed, structured persona from vague or high-level user input.
+### 1. Install Dependencies
+```bash
+pip install -r requirements.txt
+```
 
-**Input Example:**
-```text
-A 35-year-old ex-military logistics officer, introverted, now a science teacher in Canada.
+### 2. Set API Key
+Create a `.env` file:
+```bash
+OPENAI_API_KEY=your_openai_api_key_here
+OPENAI_MODEL=gpt-3.5-turbo
+```
+
+### 3. Run MVP
+```bash
+python run_mvp.py
+```
+
+---
+
+## 💰 Cost Optimization
+
+**MVP uses the cheapest options:**
+- **Model**: GPT-3.5-turbo ($0.0015/$0.002 per 1K tokens)
+- **Max tokens**: 300 per request
+- **Cost per persona**: ~$0.0015
+- **1000 personas**: ~$1.50
+
+---
+
+## 🔧 MVP Features
+
+### ✅ Persona Generator
+- **Input**: "A friendly teacher who loves science"
+- **Output**: Structured JSON persona
+
+```json
+{
+  "role": "Elementary School Teacher",
+  "tone": "enthusiastic and patient",
+  "traits": ["passionate", "nurturing", "curious"],
+  "dialogue_behavior": "uses simple language, asks engaging questions"
+}
+```
+
+### ✅ REST API
+- `POST /persona/generate` - Generate persona
+- `GET /health` - Health check
+- Auto-generated docs at `/docs`
+
+### ✅ Schema Validation
+- Required fields enforced
+- Clean data output
+- Error handling
+
+---
+
+## 📖 Example Usage
+
+### Direct Function Call
+```python
+from persona_generator.generator import generate_persona
+
+persona = generate_persona("Grumpy old programmer")
+print(persona)
+```
+
+### API Request
+```bash
+curl -X POST "http://localhost:8000/persona/generate" \
+  -H "Content-Type: application/json" \
+  -d '{"description": "Enthusiastic startup founder"}'
+```
+
+---
+
+## 🏗️ MVP Architecture
+
+```
+vpg/
+├── persona_generator/
+│   ├── generator.py          # Core generation logic
+│   ├── validator.py          # Schema validation  
+│   └── schema/
+│       └── persona_schema_v1.json
+├── api/
+│   └── endpoints.py          # FastAPI server
+├── test_mvp.py              # Simple test script
+├── run_mvp.py               # Startup script
+└── requirements.txt         # Dependencies
+```
+
+---
+
+## 🎯 Next Steps
+
+After MVP validation:
+1. Add conversation generator module
+2. Improve persona quality
+3. Add web UI
+4. Scale infrastructure
+
+**Current Status**: ✅ MVP Complete & Cost-Optimized
