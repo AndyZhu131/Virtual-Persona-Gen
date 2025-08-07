@@ -25,16 +25,6 @@ python run_mvp.py
 
 ---
 
-## 💰 Cost Optimization
-
-**MVP uses the cheapest options:**
-- **Model**: GPT-3.5-turbo ($0.0015/$0.002 per 1K tokens)
-- **Max tokens**: 300 per request
-- **Cost per persona**: ~$0.0015
-- **1000 personas**: ~$1.50
-
----
-
 ## 🔧 MVP Features
 
 ### ✅ Persona Generator
