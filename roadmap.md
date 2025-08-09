@@ -1,122 +1,109 @@
-# 🧬 Persona Generator – Development Roadmap
+# Persona Generator Roadmap
 
-This document outlines the development plan for the **Persona Generator** module of the Virtual Persona System. This module enables the generation of rich, structured personas from vague or abstract input descriptions using large language models (LLMs).
-
----
-
-## ✅ Phase 1: MVP – Core Generation Pipeline
-
-### 🎯 Goal
-Enable users to input loose, high-level character descriptions and receive structured, coherent persona profiles in JSON format.
-
-### 🔧 Key Tasks
-
-- [x] **Input Processor**
-  - Parse free-text input (e.g., "40-year-old introverted ex-nurse")  
-  - Normalize and sanitize input before prompt injection
-
-- [x] **Prompt Template Design**
-  - Design structured prompts for persona generation  
-  - Cover tone, personality, background, quirks, motivation
-
-- [x] **LLM Integration**
-  - Connect with OpenAI API (GPT-4o) or Claude API  
-  - Include retry and error handling
-
-- [x] **Output Structuring**
-  - Standardize LLM output into JSON format  
-  - Define `PersonaSchema` (e.g., name, age, tone, etc.)
-
-- [x] **Minimal REST API**
-  - `POST /persona/generate`  
-  - Accepts user input, returns structured persona JSON
+## 🎯 Project Goal
+Build a module that transforms vague user descriptions into structured JSON persona profiles,
+based on `persona_schema_v1.2.json`, ready for use in conversation generation.
 
 ---
 
-## 🚀 Phase 2: Output Quality + Expandability
+## Phase 1 — MVP (Basic Persona Generator)
+**Goal:** Take user input → Generate a valid persona JSON → Validate and return.
 
-### 🎯 Goal
-Ensure output consistency, controllability, and future extensibility.
+### Tasks
+1. **Schema Definition**
+   - [ ] Finalize `persona_schema_v1.2.json` (minimal but complete)
+   - [ ] Ensure schema is compatible with JSON Schema Validator
+   - **Deliverable:** `schema/persona_schema_v1.2.json`
 
-### 🔧 Key Tasks
+2. **Prompt Builder**
+   - [ ] Implement `prompt_builder.py` to construct system + user prompts for LLM
+   - [ ] Include basic examples for different input cases
+   - **Deliverable:** `core/prompt_builder.py`
 
-- [ ] **Persona Schema v1.1**
-  - Finalize schema with required and optional fields  
-  - Add support for nested attributes (e.g., `communication_style`, `emotional_state`)
+3. **LLM Integration (Function Calling)**
+   - [ ] Implement `generator.py` to call OpenAI API with function definition
+   - [ ] Ensure generated output matches schema
+   - **Deliverable:** `core/generator.py`
 
-- [ ] **Multi-Language Prompt Support**
-  - English + Chinese input/output  
-  - Dual-language template support
+4. **Schema Validation**
+   - [ ] Implement `validator.py` using `jsonschema`
+   - [ ] Handle validation errors with retry/fallback
+   - **Deliverable:** `core/validator.py`
 
-- [ ] **Prompt Variants Library**
-  - Create prompt sets for:
-    - Realistic (e.g. LinkedIn-style)
-    - Creative (e.g. for fiction writing)
-    - Psychological profiling (e.g. MBTI style)
+5. **Example Data**
+   - [ ] Create `examples/example_input.txt`
+   - [ ] Create `examples/example_output.json` (valid sample)
+   - **Deliverable:** `examples/`
 
-- [ ] **Attribute Confidence Estimation**
-  - Add optional LLM-based self-evaluation on how "confident" each attribute is
-  - e.g., `"confidence_score": 0.88`
-
-- [ ] **Output Coherence Checker**
-  - Validate LLM output consistency across attributes (e.g., introvert + "loud and aggressive" → conflict)
-
----
-
-## 🌈 Phase 3: User Experience & Tooling
-
-### 🎯 Goal
-Enhance usability and developer integration.
-
-### 🔧 Key Tasks
-
-- [ ] **Web UI Prototype**
-  - Input form for persona hints  
-  - Rich output viewer (field-by-field display)
-
-- [ ] **Persona Editor**
-  - Allow users to edit attributes manually after generation  
-  - Support JSON and visual form
-
-- [ ] **Export Options**
-  - JSON
-  - Markdown profile
-  - PDF (styled "character sheet")
-
-- [ ] **Persona Library**
-  - Store generated personas per user
-  - Tagging and searching support
+6. **Testing**
+   - [ ] Write unit tests for prompt building, generator, and validator
+   - **Deliverable:** `tests/test_generator.py`
 
 ---
 
-## 🧪 Stretch Goals (Future)
+## Phase 2 — Usability & Developer Experience
+**Goal:** Make it easy to test, debug, and extend.
 
-- [ ] **Persona Memory Engine**
-  - Allow personas to "remember" past context in future modules
+### Tasks
+1. **CLI Tool**
+   - [ ] Simple CLI interface: `python generator.py --input "desc"`
+   - [ ] Option to read from file and output JSON
+   - **Deliverable:** CLI-enabled `generator.py`
 
-- [ ] **Persona Consistency Over Time**
-  - Generate follow-up content to verify consistency in tone and behavior
+2. **Config Management**
+   - [ ] Use `.env` for API keys and default model
+   - [ ] Configurable schema path and output folder
+   - **Deliverable:** `.env` + config loader
 
-- [ ] **Persona Seed Templates**
-  - Predefined archetypes (e.g., “stern professor”, “rebellious teen”) as generation shortcuts
-
----
-
-## 📌 Milestone Summary
-
-| Milestone | Description | ETA |
-|----------|-------------|-----|
-| MVP Complete | Core generation working via API | ✅ Done |
-| Schema v1.1 + Prompt Library | Improved structure and variant control | Week 2 |
-| UI + Editor Tools | Rich editing and viewing experience | Week 4 |
-| Export + Library | Persona management and output formats | Week 5–6 |
+3. **Logging & Debug**
+   - [ ] Add debug mode to log tokens, cost estimates, and raw API output
+   - **Deliverable:** Logging integrated into `generator.py`
 
 ---
 
-## 📄 Dependencies
+## Phase 3 — Extension & Scaling
+**Goal:** Support richer persona generation and integration with other modules.
 
-- OpenAI API (GPT-4o) / Claude 3.5 / Gemini (LLM backend)
-- Python + FastAPI backend
-- JSON Schema validation
-- Optional: React or Vue for UI
+### Tasks
+1. **Background Story Support**
+   - [ ] Add optional background generation (separate schema section)
+   - [ ] Save to long-term memory store (vector DB)
+   - **Deliverable:** Updated schema + retriever integration
 
+2. **Multiple Output Formats**
+   - [ ] Export persona in JSON + Markdown (readable profile)
+   - [ ] Optional YAML support
+   - **Deliverable:** Export utilities
+
+3. **Predefined Templates**
+   - [ ] Support “base personas” as starting points
+   - [ ] Allow user to customize
+   - **Deliverable:** Template storage + loader
+
+4. **Conversation Generator Integration**
+   - [ ] Provide persona JSON directly to Conversation Generator API
+   - **Deliverable:** API contract for module handoff
+
+---
+
+## 📅 Estimated Timeline
+
+| Phase  | Duration |
+|--------|----------|
+| MVP    | 3–5 days |
+| Phase 2| 2–3 days |
+| Phase 3| 5–7 days |
+
+---
+
+## ✅ Deliverables Summary
+- `schema/persona_schema_v1.2.json`
+- `core/prompt_builder.py`
+- `core/generator.py`
+- `core/validator.py`
+- `examples/`
+- `tests/`
+- CLI-enabled entry point
+- Documentation in `README.md`
+
+---

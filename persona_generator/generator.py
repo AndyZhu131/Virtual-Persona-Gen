@@ -1,69 +1,154 @@
+# generator.py
+# Requirements:
+#   pip install openai==1.* jsonschema python-dotenv
+# Env:
+#   export OPENAI_API_KEY=sk-xxx
+#   export OPENAI_MODEL=gpt-4o-mini  # optional
+
 import os
 import json
-from typing import Dict, Any
+from typing import Dict, Any, Optional, List
+
 from dotenv import load_dotenv
 from openai import OpenAI
-from validator import validate_persona, clean_persona
+import persona_generator.validator as validator
 
+# ---- Load env
 load_dotenv()
-
-MODEL = os.getenv("OPENAI_MODEL", "gpt-3.5-turbo")
+MODEL = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
+# ---- Paths
+SCHEMA_PATH = "persona_generator/schema/persona_schema_v1.2.json"
 
-def generate_persona(user_input: str) -> Dict[str, Any]:
+
+def load_schema(path: str) -> Dict[str, Any]:
+    with open(path, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+
+def schema_to_function(schema: Dict[str, Any]) -> Dict[str, Any]:
     """
-    Calls OpenAI with simple JSON parsing to generate a structured persona.
-    Cost-optimized version for MVP.
+    Convert JSON Schema (subset) into OpenAI function definition.
     """
+    return {
+        "name": "generate_persona",
+        "description": "Generate a dialogue-ready persona (PersonaSchema v1.2).",
+        "parameters": {
+            "type": "object",
+            "properties": schema.get("properties", {}),
+            "required": schema.get("required", []),
+            "additionalProperties": schema.get("additionalProperties", False),
+        },
+    }
+
+
+def build_messages(user_input: str,
+                   recommend_llm_prompt_injection: Optional[str] = None,
+                   extra_guidelines: Optional[List[str]] = None) -> list:
+    """
+    Build messages. If 'recommend_llm_prompt_injection' is provided,
+    we nudge the model to include that field (optional) in the persona.
+    """
+    guidelines = [
+        "Return only by calling the function with a valid persona object.",
+        "Keep values concise and specific.",
+        "Do not add fields not defined in the schema.",
+    ]
+    if extra_guidelines:
+        guidelines.extend(extra_guidelines)
+
+    system_text = (
+        "You are a persona generator. "
+        + " ".join(guidelines)
+    )
+
+    user_lines = [
+        "Create a persona for dialogue generation from this description:",
+        user_input,
+        "",
+        "Required fields: role, tone, traits, dialogue_behavior.",
+        "Optional fields: id, name, quirks, scenario_tags, llm_prompt_injection."
+    ]
+    if recommend_llm_prompt_injection:
+        user_lines.append(
+            f"If appropriate, set 'llm_prompt_injection' to: {recommend_llm_prompt_injection}"
+        )
+
+    return [
+        {"role": "system", "content": system_text},
+        {"role": "user", "content": "\n".join(user_lines)},
+    ]
+
+
+def call_openai_function(messages: list, function_def: Dict[str, Any],
+                         temperature: float = 0.7) -> Dict[str, Any]:
     if not OPENAI_API_KEY:
-        raise RuntimeError("OPENAI_API_KEY not set")
+        raise RuntimeError("OPENAI_API_KEY is not set")
 
     client = OpenAI(api_key=OPENAI_API_KEY)
 
-    # Simplified prompt for cost efficiency
-    system_prompt = """You are a persona generator. Generate a JSON persona from user input.
-Return ONLY valid JSON with these required fields:
-- "role": character's main role/job
-- "tone": speaking style (e.g. "formal", "casual")  
-- "traits": array of 2-3 personality traits
-- "dialogue_behavior": how they speak in conversation
-
-Optional fields: "name", "quirks" (array)
-
-Example: {"role": "Teacher", "tone": "patient and encouraging", "traits": ["dedicated", "empathetic"], "dialogue_behavior": "speaks clearly, asks questions to check understanding"}"""
-
-    response = client.chat.completions.create(
+    resp = client.chat.completions.create(
         model=MODEL,
-        messages=[
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": f"Create persona: {user_input}"}
-        ],
-        temperature=0.7,
-        max_tokens=300  # Limit tokens to reduce cost
+        messages=messages,
+        tools=[{"type": "function", "function": function_def}],
+        tool_choice={"type": "function", "function": {"name": function_def["name"]}},
+        temperature=temperature,
     )
 
-    # Parse JSON from response
+    tool_calls = resp.choices[0].message.tool_calls
+    if not tool_calls:
+        raise ValueError("Model did not perform a function call. Check prompts and model.")
+    arguments_str = tool_calls[0].function.arguments
     try:
-        content = response.choices[0].message.content.strip()
-        # Remove any markdown formatting if present
-        if content.startswith("```json"):
-            content = content.replace("```json", "").replace("```", "").strip()
-        
-        persona = json.loads(content)
-        
-        # Clean and validate the persona
-        persona = clean_persona(persona)
-        validate_persona(persona)
-        
-        return persona
+        persona = json.loads(arguments_str)
     except json.JSONDecodeError as e:
-        raise ValueError(f"Failed to parse JSON from AI response: {e}")
+        raise ValueError(f"Function call returned invalid JSON: {arguments_str}") from e
+    return persona
+
+
+def validate_persona(persona: Dict[str, Any], schema: Dict[str, Any]) -> None:
+    # Delegate validation to central validator module
+    # Note: schema argument is kept for API compatibility but ignored.
+    validator.validate_persona(persona)
+
+
+def generate_persona(user_input: str,
+                     schema_path: str = SCHEMA_PATH,
+                     recommend_llm_prompt_injection: Optional[str] = None) -> Dict[str, Any]:
+    """
+    Main entry:
+      1) load schema
+      2) build function definition from schema
+      3) build messages
+      4) call OpenAI (function calling)
+      5) validate and return
+    """
+    schema = load_schema(schema_path)
+    function_def = schema_to_function(schema)
+    messages = build_messages(
+        user_input=user_input,
+        recommend_llm_prompt_injection=recommend_llm_prompt_injection
+    )
+
+    persona = call_openai_function(messages, function_def)
+    try:
+        validate_persona(persona, schema)
     except ValueError as e:
-        raise ValueError(f"Persona validation failed: {e}")
+        # Optionally: add repair/fallback logic here
+        raise ValueError(f"Persona failed schema validation: {str(e)}") from e
+    return persona
 
 
 if __name__ == "__main__":
-    example_input = "A 35-year-old introverted data scientist who speaks precisely and dislikes small talk."
-    result = generate_persona(example_input)
-    print(json.dumps(result, indent=2, ensure_ascii=False))
+    # Example: mock interviewer persona with STAR feedback rule as injection
+    example_input = (
+        "A senior engineering manager who speaks concisely, probes for tradeoffs, "
+        "and dislikes vague answers."
+    )
+    example_injection = "Evaluate answers using the STAR method; give brief feedback each turn."
+    result = generate_persona(
+        user_input=example_input,
+        recommend_llm_prompt_injection=example_injection
+    )
+    print(json.dumps(result, ensure_ascii=False, indent=2))
