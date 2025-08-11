@@ -30,7 +30,7 @@ async def root():
 async def create_persona(request: PersonaRequest):
     """Generate a persona from a text description"""
     try:
-        persona = generate_persona(request.description)
+        persona = generate_persona(user_input=request.description)
         return PersonaResponse(**persona)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))

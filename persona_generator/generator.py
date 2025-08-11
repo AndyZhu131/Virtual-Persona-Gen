@@ -19,7 +19,7 @@ MODEL = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 # ---- Paths
-SCHEMA_PATH = "persona_generator/schema/persona_schema_v1.2.json"
+SCHEMA_PATH = "persona_generator/schema/persona_schema_v1.json"
 
 
 def load_schema(path: str) -> Dict[str, Any]:
@@ -33,7 +33,7 @@ def schema_to_function(schema: Dict[str, Any]) -> Dict[str, Any]:
     """
     return {
         "name": "generate_persona",
-        "description": "Generate a dialogue-ready persona (PersonaSchema v1.2).",
+        "description": "Generate a dialogue-ready persona.",
         "parameters": {
             "type": "object",
             "properties": schema.get("properties", {}),
@@ -124,6 +124,7 @@ def generate_persona(user_input: str,
       4) call OpenAI (function calling)
       5) validate and return
     """
+    print(f"Generating persona for user input: {user_input}")
     schema = load_schema(schema_path)
     function_def = schema_to_function(schema)
     messages = build_messages(
