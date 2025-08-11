@@ -64,7 +64,7 @@ secrets.json
 api_keys.txt
 
 # Test outputs
-test_data/outputs/
+persona_generator/testdata/outputs/
 
 # Cursor IDE Ignore File
 .cursorignore

@@ -5,6 +5,13 @@
 #   export OPENAI_API_KEY=sk-xxx
 #   export OPENAI_MODEL=gpt-4o-mini  # optional
 
+#### Current function logic ####
+# 1. Load schema
+# 2. Build function definition from schema
+# 3. Build messages
+# 4. Call OpenAI (function calling)
+# 5. Validate and return
+
 import os
 import json
 from typing import Dict, Any, Optional, List
@@ -141,15 +148,3 @@ def generate_persona(user_input: str,
     return persona
 
 
-if __name__ == "__main__":
-    # Example: mock interviewer persona with STAR feedback rule as injection
-    example_input = (
-        "A senior engineering manager who speaks concisely, probes for tradeoffs, "
-        "and dislikes vague answers."
-    )
-    example_injection = "Evaluate answers using the STAR method; give brief feedback each turn."
-    result = generate_persona(
-        user_input=example_input,
-        recommend_llm_prompt_injection=example_injection
-    )
-    print(json.dumps(result, ensure_ascii=False, indent=2))

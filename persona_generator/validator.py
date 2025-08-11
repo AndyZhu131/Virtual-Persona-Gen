@@ -1,5 +1,6 @@
 import json
 import jsonschema
+import os
 from typing import Dict, Any
 
 SCHEMA_PATH = os.getenv("SCHEMA_PATH")
