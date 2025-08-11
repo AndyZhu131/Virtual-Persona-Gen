@@ -15,11 +15,11 @@ import persona_generator.validator as validator
 
 # ---- Load env
 load_dotenv()
-MODEL = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
+MODEL = os.getenv("OPENAI_MODEL")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 # ---- Paths
-SCHEMA_PATH = "persona_generator/schema/persona_schema_v1.json"
+SCHEMA_PATH = "./persona_generator/schema/persona_schema_v1.json"
 
 
 def load_schema(path: str) -> Dict[str, Any]:
@@ -82,7 +82,7 @@ def build_messages(user_input: str,
 
 
 def call_openai_function(messages: list, function_def: Dict[str, Any],
-                         temperature: float = 0.7) -> Dict[str, Any]:
+                         temperature: float = 1) -> Dict[str, Any]:
     if not OPENAI_API_KEY:
         raise RuntimeError("OPENAI_API_KEY is not set")
 

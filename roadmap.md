@@ -2,7 +2,7 @@
 
 ## 🎯 Project Goal
 Build a module that transforms vague user descriptions into structured JSON persona profiles,
-based on `persona_schema_v1.2.json`, ready for use in conversation generation.
+based on `persona_schema_v1.json`, ready for use in conversation generation.
 
 ---
 
@@ -11,9 +11,9 @@ based on `persona_schema_v1.2.json`, ready for use in conversation generation.
 
 ### Tasks
 1. **Schema Definition**
-   - [ ] Finalize `persona_schema_v1.2.json` (minimal but complete)
+   - [ ] Finalize `persona_schema_v1.json` (minimal but complete)
    - [ ] Ensure schema is compatible with JSON Schema Validator
-   - **Deliverable:** `schema/persona_schema_v1.2.json`
+   - **Deliverable:** `schema/persona_schema_v1.json`
 
 2. **Prompt Builder**
    - [ ] Implement `prompt_builder.py` to construct system + user prompts for LLM
@@ -97,7 +97,7 @@ based on `persona_schema_v1.2.json`, ready for use in conversation generation.
 ---
 
 ## ✅ Deliverables Summary
-- `schema/persona_schema_v1.2.json`
+- `schema/persona_schema_v1.json`
 - `core/prompt_builder.py`
 - `core/generator.py`
 - `core/validator.py`
