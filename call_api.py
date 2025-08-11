@@ -33,11 +33,15 @@ def main() -> None:
         response = requests.post(url, json=payload, timeout=30)
         response.raise_for_status()  # Raises an exception for 4XX/5XX status codes
         
-        # Print response
-        print(response.text)
+        # Parse and format the JSON response
+        response_data = response.json()
         
-        # Save response to output file
-        output_file.write_text(response.text, encoding="utf-8")
+        # Print formatted response
+        print("📋 Generated Persona:")
+        print(json.dumps(response_data, indent=2, ensure_ascii=False))
+        
+        # Save formatted response to output file
+        output_file.write_text(json.dumps(response_data, indent=2, ensure_ascii=False), encoding="utf-8")
         print(f"\n💾 Response saved to: {output_file}")
         
     except requests.exceptions.RequestException as e:
