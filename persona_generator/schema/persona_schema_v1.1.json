@@ -1,0 +1,54 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "PersonaSchemaMinimal",
+    "type": "object",
+    "required": ["role", "tone", "traits", "dialogue_behavior"],
+    "properties": {
+      "role": { 
+        "type": "string", 
+        "minLength": 1,
+        "description": "The primary identity or occupation of the persona, e.g., 'senior backend engineer'."
+      },
+      "tone": { 
+        "type": "string", 
+        "minLength": 1,
+        "description": "The general speaking tone, e.g., 'formal', 'sarcastic', 'friendly'."
+      },
+      "traits": {
+        "type": "array",
+        "minItems": 1,
+        "items": { "type": "string", "minLength": 1 },
+        "description": "Key personality traits or characteristics, e.g., ['patient', 'logical', 'curious']."
+      },
+      "dialogue_behavior": { 
+        "type": "string", 
+        "minLength": 1,
+        "description": "How the persona behaves in conversations, e.g., 'asks clarifying questions before answering'."
+      },
+  
+      "name": { 
+        "type": "string",
+        "description": "Optional display name for the persona."
+      },
+      "quirks": {
+        "type": "array",
+        "items": { "type": "string" },
+        "description": "Small, distinctive behaviors or habits that make the persona unique."
+      },
+      "scenario_tags": {
+        "type": "array",
+        "items": { "type": "string" },
+        "description": "Optional tags for scenario context, e.g., 'job interview', 'fantasy RPG'."
+      },
+      "llm_prompt_injection": { 
+        "type": "string",
+        "description": "Extra instruction or behavioral override to inject into the persona's prompt."
+      },
+      "id": { 
+        "type": "string",
+        "description": "Optional unique identifier for the persona."
+      }
+    },
+    "additionalProperties": false
+  }
+  

@@ -19,7 +19,7 @@ MODEL = os.getenv("OPENAI_MODEL")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 # ---- Paths
-SCHEMA_PATH = "./persona_generator/schema/persona_schema_v1.json"
+SCHEMA_PATH = os.getenv("SCHEMA_PATH")
 
 
 def load_schema(path: str) -> Dict[str, Any]:
@@ -33,7 +33,7 @@ def schema_to_function(schema: Dict[str, Any]) -> Dict[str, Any]:
     """
     return {
         "name": "generate_persona",
-        "description": "Generate a dialogue-ready persona.",
+        "description": "Generate a conversation-ready persona.",
         "parameters": {
             "type": "object",
             "properties": schema.get("properties", {}),

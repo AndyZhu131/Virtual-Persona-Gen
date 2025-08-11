@@ -2,9 +2,11 @@ import json
 import jsonschema
 from typing import Dict, Any
 
+SCHEMA_PATH = os.getenv("SCHEMA_PATH")
+
 def load_schema() -> Dict[str, Any]:
     """Load the MVP persona schema"""
-    with open("./persona_generator/schema/persona_schema_v1.json", "r") as f:
+    with open(SCHEMA_PATH, "r") as f:
         return json.load(f)
 
 def validate_persona(persona: Dict[str, Any]) -> bool:
