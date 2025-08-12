@@ -1,37 +1,37 @@
 from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any
 import sys
 import os
 
 # Add parent directory to path for imports
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from persona_generator.generator import generate_persona
+from persona_generator.PersonaGenerator import PersonaGenerator
 
 app = FastAPI(title="VPG MVP API", version="1.0.0")
-
-class PersonaRequest(BaseModel):
-    description: str
-    
-class PersonaResponse(BaseModel):
-    role: str
-    tone: str
-    traits: List[str]
-    dialogue_behavior: str
-    name: Optional[str] = None
-    quirks: Optional[List[str]] = None
 
 @app.get("/")
 async def root():
     return {"message": "VPG MVP API - Virtual Persona Generator", "version": "1.0.0"}
 
-@app.post("/persona/generate", response_model=PersonaResponse)
-async def create_persona(request: PersonaRequest):
+@app.post("/persona/generate")
+async def create_persona(request: Dict[str, Any]):
     """Generate a persona from a text description"""
     try:
-        persona = generate_persona(user_input=request.description)
-        return PersonaResponse(**persona)
+        description = request.get("description")
+        if not description:
+            raise HTTPException(status_code=400, detail="Description is required")
+            
+        # Create PersonaGenerator instance using environment variables
+        generator = PersonaGenerator.from_env()
+        
+        # Generate persona
+        persona = generator.generate(
+            user_input=description,
+            clean_with_validator=False  # Clean the output using PersonaValidator
+        )
+        
+        return persona
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
