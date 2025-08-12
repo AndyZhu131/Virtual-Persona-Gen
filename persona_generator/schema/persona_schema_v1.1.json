@@ -43,10 +43,6 @@
       "llm_prompt_injection": { 
         "type": "string",
         "description": "Extra instruction or behavioral override to inject into the persona's prompt."
-      },
-      "id": { 
-        "type": "string",
-        "description": "Optional unique identifier for the persona."
       }
     },
     "additionalProperties": false

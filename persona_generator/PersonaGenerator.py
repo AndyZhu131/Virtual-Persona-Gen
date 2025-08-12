@@ -123,6 +123,8 @@ class PersonaGenerator:
             "Return only by calling the function with a valid persona object.",
             "Keep values concise and specific.",
             "Do not add fields not defined in the schema.",
+            "Do not generate optional fields if they are not necessary or relevant to the persona.",
+            "Only include optional fields when they add meaningful value to the persona description.",
         ]
         if extra_guidelines:
             guidelines.extend(extra_guidelines)
@@ -135,6 +137,7 @@ class PersonaGenerator:
             "",
             "Required fields: role, tone, traits, dialogue_behavior.",
             "Optional fields: id, name, quirks, scenario_tags, llm_prompt_injection.",
+            "Note: Only include optional fields if they are necessary and add meaningful value to the persona. Do not generate optional fields just to fill them out.",
         ]
         if recommend_llm_prompt_injection:
             user_lines.append(
