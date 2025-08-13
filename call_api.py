@@ -15,7 +15,7 @@ def main() -> None:
     url = "http://localhost:8000/persona/generate"
     
     inputs_folder = Path("./persona_generator/testdata/inputs")
-    input_filename = "mentor.txt"
+    input_filename = "George_Washington.txt"
     input_file = inputs_folder / input_filename
     
     outputs_folder = Path("./persona_generator/testdata/outputs")
