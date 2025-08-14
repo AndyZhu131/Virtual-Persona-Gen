@@ -72,7 +72,8 @@ Keep it natural and in-character. Return only the dialogue text, no quotes or fo
     def generate_opening_line(self, 
                              persona: Dict[str, Any], 
                              context: Optional[str] = None,
-                             temperature: float = 0.8) -> Dict[str, Any]:
+                             temperature: float = 0.8,
+                             max_tokens: int = 100) -> Dict[str, Any]:
         """
         Generate an opening line for conversation based on persona.
         
@@ -80,6 +81,7 @@ Keep it natural and in-character. Return only the dialogue text, no quotes or fo
             persona: Dictionary containing persona information
             context: Optional context for the conversation (e.g., "at a coffee shop")
             temperature: Creativity level for response generation (0.0 to 2.0)
+            max_tokens: Maximum tokens for the response (default 100 for opening lines)
         
         Returns:
             Dictionary with opening_line and metadata
@@ -108,7 +110,7 @@ Keep it natural and in-character. Return only the dialogue text, no quotes or fo
                 model=self.model,
                 messages=messages,
                 temperature=temperature,
-                max_tokens=100
+                max_tokens=max_tokens
             )
             
             # Calculate response time
@@ -143,71 +145,92 @@ Keep it natural and in-character. Return only the dialogue text, no quotes or fo
             # Calculate response time even if there's an error
             response_time = time.time() - start_time
             raise Exception(f"OpenAI API call failed after {round(response_time, 3)}s: {str(e)}")
-    
-    def generate_multiple_openings(self, 
-                                  persona: Dict[str, Any], 
-                                  count: int = 3,
-                                  context: Optional[str] = None,
-                                  temperature_range: Optional[tuple] = None) -> Dict[str, Any]:
+
+    def generate_conversation_response(self,
+                                     persona: Dict[str, Any],
+                                     conversation_history: List[Dict[str, str]],
+                                     context: Optional[str] = None,
+                                     temperature: float = 0.8,
+                                     max_tokens: int = 150) -> Dict[str, Any]:
         """
-        Generate multiple opening lines for variety.
+        Generate a response in an ongoing conversation based on persona and conversation history.
         
         Args:
             persona: Dictionary containing persona information
-            count: Number of opening lines to generate
-            context: Optional context for the conversation
-            temperature_range: Optional tuple (min, max) for temperature variation
+            conversation_history: List of previous messages in format [{"role": "user", "content": "..."}, {"role": "assistant", "content": "..."}]
+            context: Optional context for the conversation (e.g., "at a coffee shop")
+            temperature: Creativity level for response generation (0.0 to 2.0)
+            max_tokens: Maximum tokens for the response (default 150 for conversation responses)
         
         Returns:
-            Dictionary with list of opening lines and aggregated metadata
-        """
-        if count < 1:
-            raise ValueError("Count must be at least 1")
-        
-        openings = []
-        all_metadata = []
-        
-        # Set temperature range
-        if temperature_range is None:
-            temp_min, temp_max = 0.7, 1.1
-        else:
-            temp_min, temp_max = temperature_range
-        
-        for i in range(count):
-            # Vary temperature within the range
-            if count == 1:
-                temp = (temp_min + temp_max) / 2
-            else:
-                temp = temp_min + (i / (count - 1)) * (temp_max - temp_min)
+            Dictionary with response and metadata
             
-            try:
-                result = self.generate_opening_line(persona, context, temperature=temp)
-                openings.append(result["opening_line"])
-                all_metadata.append(result["metadata"])
-            except Exception as e:
-                # Log error but continue with other generations
-                print(f"Warning: Failed to generate opening {i+1}: {e}")
-                continue
+        Raises:
+            RuntimeError: If API key is not set
+            Exception: If OpenAI API call fails
+        """
+        # Build the prompt
+        base_prompt = self._build_conversation_prompt(persona)
         
-        if not openings:
-            raise Exception("Failed to generate any opening lines")
+        # Create system message for ongoing conversation
+        system_message = f"""You are role-playing as this character in an ongoing conversation. 
+Stay in character at all times and respond naturally to what the other person is saying.
+Keep responses conversational and engaging, typically 2-4 sentences.
+
+{base_prompt}"""
         
-        # Aggregate metadata
-        total_tokens = sum(m["tokens"]["total_tokens"] or 0 for m in all_metadata)
-        avg_response_time = sum(m["response_time"] for m in all_metadata) / len(all_metadata)
+        # Build conversation messages
+        messages = [{"role": "system", "content": system_message}]
         
-        aggregated_metadata = {
-            "total_generated": len(openings),
-            "requested_count": count,
-            "average_response_time": round(avg_response_time, 3),
-            "total_tokens": total_tokens,
-            "model": self.model,
-            "temperature_range": (temp_min, temp_max),
-            "context": context,
-            "individual_metadata": all_metadata
-        }
+        # Add conversation history
+        messages.extend(conversation_history)
         
-        return {
-            "opening_lines": openings,
-            "metadata": aggregated_metadata
-        }
+        # Add context if provided
+        if context:
+            messages.append({"role": "system", "content": f"Context: {context}"})
+        
+        # Record start time
+        start_time = time.time()
+        
+        try:
+            # Call OpenAI
+            resp = self.client.chat.completions.create(
+                model=self.model,
+                messages=messages,
+                temperature=temperature,
+                max_tokens=max_tokens
+            )
+            
+            # Calculate response time
+            response_time = time.time() - start_time
+            
+            # Extract the conversation response
+            conversation_response = resp.choices[0].message.content.strip()
+            
+            # Extract token usage
+            usage = resp.usage
+            token_info = {
+                "prompt_tokens": usage.prompt_tokens if usage else None,
+                "completion_tokens": usage.completion_tokens if usage else None,
+                "total_tokens": usage.total_tokens if usage else None
+            }
+            
+            # Build metadata
+            metadata = {
+                "response_time": round(response_time, 3),
+                "model": self.model,
+                "tokens": token_info,
+                "temperature": temperature,
+                "context": context,
+                "conversation_length": len(conversation_history)
+            }
+            
+            return {
+                "conversation_response": conversation_response,
+                "metadata": metadata
+            }
+            
+        except Exception as e:
+            # Calculate response time even if there's an error
+            response_time = time.time() - start_time
+            raise Exception(f"OpenAI API call failed after {round(response_time, 3)}s: {str(e)}")

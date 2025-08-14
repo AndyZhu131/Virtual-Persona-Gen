@@ -1,5 +1,5 @@
 from fastapi import FastAPI, HTTPException
-from typing import Dict, Any
+from typing import Dict, Any, List, Optional
 import sys
 import os
 
@@ -7,6 +7,7 @@ import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from persona_generator.PersonaGenerator import PersonaGenerator
+from conversation_generator.generator import ConversationGenerator
 
 app = FastAPI(title="VPG MVP API", version="1.0.0")
 
@@ -32,6 +33,78 @@ async def create_persona(request: Dict[str, Any]):
         )
         
         return persona
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@app.post("/conversation/start")
+async def start_conversation(request: Dict[str, Any]):
+    """Generate a persona and opening line for a new conversation"""
+    try:
+        description = request.get("description")
+        context = request.get("context")  # Optional
+        temperature = request.get("temperature", 0.8)
+        max_tokens = request.get("max_tokens", 100)
+        
+        if not description:
+            raise HTTPException(status_code=400, detail="Description is required")
+        
+        # Generate persona
+        persona_generator = PersonaGenerator.from_env()
+        persona = persona_generator.generate(
+            user_input=description,
+            clean_with_validator=False
+        )
+        
+        # Generate opening line
+        conversation_generator = ConversationGenerator.from_env()
+        opening_result = conversation_generator.generate_opening_line(
+            persona=persona,
+            context=context,
+            temperature=temperature,
+            max_tokens=max_tokens
+        )
+        
+        return {
+            "persona": persona,
+            "opening_line": opening_result["opening_line"],
+            "metadata": opening_result["metadata"]
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@app.post("/conversation/respond")
+async def continue_conversation(request: Dict[str, Any]):
+    """Generate a response in an ongoing conversation"""
+    try:
+        persona = request.get("persona")
+        conversation_history = request.get("conversation_history")
+        context = request.get("context")  # Optional
+        temperature = request.get("temperature", 0.8)
+        max_tokens = request.get("max_tokens", 150)
+        
+        if not persona:
+            raise HTTPException(status_code=400, detail="Persona is required")
+        if not conversation_history:
+            raise HTTPException(status_code=400, detail="Conversation history is required")
+        if not isinstance(conversation_history, list):
+            raise HTTPException(status_code=400, detail="Conversation history must be a list")
+        
+        # Generate conversation response
+        conversation_generator = ConversationGenerator.from_env()
+        response_result = conversation_generator.generate_conversation_response(
+            persona=persona,
+            conversation_history=conversation_history,
+            context=context,
+            temperature=temperature,
+            max_tokens=max_tokens
+        )
+        
+        return {
+            "conversation_response": response_result["conversation_response"],
+            "metadata": response_result["metadata"]
+        }
+        
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 

@@ -10,7 +10,7 @@ import json
 import requests
 from pathlib import Path
 
-INPUT_CODE_START = 9
+INPUT_CODE_START = 24
 INPUT_CODE_END = 24
 
 def call_api(input_file, output_file):
@@ -50,8 +50,8 @@ def call_api(input_file, output_file):
 
 def main() -> None:
     
-    inputs_folder = Path("./testdata/inputs")
-    outputs_folder = Path("./testdata/outputs")
+    inputs_folder = Path("./persona_generator/testdata/inputs")
+    outputs_folder = Path("./persona_generator/testdata/outputs")
     
     # Find input file using prefix matching for double-digit numbers
     for i in range(INPUT_CODE_START, INPUT_CODE_END+1):
