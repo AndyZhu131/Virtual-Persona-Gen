@@ -10,14 +10,14 @@ import json
 import requests
 from pathlib import Path
 
-INPUT_CODE_START = 9
-INPUT_CODE_END = 9
+INPUT_CODE_START = 1
+INPUT_CODE_END = 1
 
 def call_api(input_file, output_file):
     url = "http://localhost:8000/conversation/start"
     input_filename = input_file.name
     if not input_file.exists():
-        print(f"❌ Input file not found: {input_file}")
+        print(f"❌ Input file not found: {input_file}") 
         return
     
     description = input_file.read_text(encoding="utf-8").strip()
@@ -28,7 +28,7 @@ def call_api(input_file, output_file):
         "description": description,
         "context": "general conversation",
         "temperature": 1.0,
-            "max_completion_tokens": 100
+        "max_completion_tokens": 100
     }
 
     try:
@@ -50,6 +50,9 @@ def call_api(input_file, output_file):
         # Save formatted response to output file
         output_file.write_text(json.dumps(response_data, indent=2, ensure_ascii=False), encoding="utf-8")
         print(f"💾 Response saved to: {output_file}")
+        
+    except requests.exceptions.Timeout as e:
+        print(f"⏰ Request timed out after 30 seconds")
         
     except requests.exceptions.RequestException as e:
         print(f"❌ Request failed: {e}")

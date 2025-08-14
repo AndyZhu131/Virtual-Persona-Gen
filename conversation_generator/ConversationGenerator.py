@@ -96,7 +96,7 @@ Keep it natural and in-character. Return only the dialogue text, no quotes or fo
                              persona: Dict[str, Any], 
                              context: Optional[str] = None,
                              temperature: float = 1.0,
-                             max_completion_tokens: int = 100) -> Dict[str, Any]:
+                             max_completion_tokens: int = 300) -> Dict[str, Any]:
         """
         Generate an opening line for conversation based on persona.
         
@@ -118,20 +118,27 @@ Keep it natural and in-character. Return only the dialogue text, no quotes or fo
         if context:
             base_prompt += f"\n\nContext: {context}"
         
-        # Create messages
-        messages = [
+        # Create input for Responses API
+        api_input = [
             {"role": "system", "content": "You are a conversation starter generator. Generate natural, in-character opening lines."},
             {"role": "user", "content": base_prompt}
         ]
+        
+        # Debug: Print the prompt being sent to OpenAI
+        print(f"🔍 DEBUG - ConversationGenerator Prompt:")
+        print(f"📝 System: {api_input[0]['content']}")
+        print(f"📝 User: {api_input[1]['content']}")
+        print(f"🎛️ Settings: temperature={temperature}, max_completion_tokens={max_completion_tokens}")
+        print("=" * 60)
         
         # Record start time
         start_time = time.time()
         
         try:
-            # Call OpenAI
-            resp = self.client.chat.completions.create(
+            # Call OpenAI Responses API
+            resp = self.client.responses.create(
                 model=self.model,
-                messages=messages,
+                input=api_input,  # Responses API uses 'input' instead of 'messages'
                 temperature=temperature,
                 max_completion_tokens=max_completion_tokens
             )
@@ -139,8 +146,15 @@ Keep it natural and in-character. Return only the dialogue text, no quotes or fo
             # Calculate response time
             response_time = time.time() - start_time
             
-            # Extract the opening line
-            opening_line = resp.choices[0].message.content.strip()
+            # Extract the opening line (Responses API structure)
+            opening_line = resp.output[0].content.strip()
+            
+            # Debug: Print the response from OpenAI
+            print(f"🔍 DEBUG - OpenAI Response:")
+            print(f"💬 Opening Line: '{opening_line}'")
+            print(f"🏁 Finish Reason: {resp.output[0].finish_reason}")
+            print(f"🎯 Response Length: {len(opening_line)} characters")
+            print("=" * 60)
             
             # Extract token usage
             usage = resp.usage
@@ -202,24 +216,24 @@ Keep responses conversational and engaging, typically 2-4 sentences.
 
 {base_prompt}"""
         
-        # Build conversation messages
-        messages = [{"role": "system", "content": system_message}]
+        # Build conversation input
+        api_input = [{"role": "system", "content": system_message}]
         
         # Add conversation history
-        messages.extend(conversation_history)
+        api_input.extend(conversation_history)
         
         # Add context if provided
         if context:
-            messages.append({"role": "system", "content": f"Context: {context}"})
+            api_input.append({"role": "system", "content": f"Context: {context}"})
         
         # Record start time
         start_time = time.time()
         
         try:
-            # Call OpenAI
-            resp = self.client.chat.completions.create(
+            # Call OpenAI Responses API
+            resp = self.client.responses.create(
                 model=self.model,
-                messages=messages,
+                input=api_input,  # Responses API uses 'input' instead of 'messages'
                 temperature=temperature,
                 max_completion_tokens=max_completion_tokens
             )
@@ -227,8 +241,8 @@ Keep responses conversational and engaging, typically 2-4 sentences.
             # Calculate response time
             response_time = time.time() - start_time
             
-            # Extract the conversation response
-            conversation_response = resp.choices[0].message.content.strip()
+            # Extract the conversation response (Responses API structure)
+            conversation_response = resp.output[0].content.strip()
             
             # Extract token usage
             usage = resp.usage

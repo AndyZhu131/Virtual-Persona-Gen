@@ -111,13 +111,13 @@ class PersonaGenerator:
         }
 
     @staticmethod
-    def _build_messages(
+    def _build_api_input(
         user_input: str,
         recommend_llm_prompt_injection: Optional[str] = None,
         extra_guidelines: Optional[List[str]] = None,
     ) -> List[Dict[str, str]]:
         """
-        Build the system + user messages for the chat model.
+        Build the system + user input for the Responses API.
         """
         guidelines = [
             "Return only by calling the function with a valid persona object.",
@@ -149,19 +149,19 @@ class PersonaGenerator:
             {"role": "user", "content": "\n".join(user_lines)},
         ]
 
-    def _call_openai_function(self, messages: List[Dict[str, str]]) -> Dict[str, Any]:
+    def _call_openai_function(self, api_input: List[Dict[str, str]]) -> Dict[str, Any]:
         """
-        Call OpenAI with function calling and return parsed persona dict.
+        Call OpenAI Responses API with function calling and return parsed persona dict.
         """
-        resp = self._client.chat.completions.create(
+        resp = self._client.responses.create(
             model=self.model,
-            messages=messages,
+            input=api_input,
             tools=[{"type": "function", "function": self._function_def}],
             tool_choice={"type": "function", "function": {"name": self._function_def["name"]}},
             temperature=self.temperature,
         )
 
-        tool_calls = resp.choices[0].message.tool_calls
+        tool_calls = resp.output[0].tool_calls
         if not tool_calls:
             raise ValueError("Model did not perform a function call. Check prompts and model.")
         arguments_str = tool_calls[0].function.arguments
@@ -188,12 +188,12 @@ class PersonaGenerator:
             extra_guidelines: Optional extra system instructions.
             clean_with_validator: If True, run PersonaValidator.clean_persona() before returning.
         """
-        messages = self._build_messages(
+        api_input = self._build_api_input(
             user_input=user_input,
             recommend_llm_prompt_injection=recommend_llm_prompt_injection,
             extra_guidelines=extra_guidelines,
         )
-        persona = self._call_openai_function(messages)
+        persona = self._call_openai_function(api_input)
 
         # Validate via PersonaValidator (raises ValueError if invalid)
         self._validator.validate_persona(persona)
