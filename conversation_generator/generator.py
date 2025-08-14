@@ -57,7 +57,7 @@ Tone: {persona.get('tone', 'Neutral')}
 Traits: {', '.join(persona.get('traits', ['Adaptable']))}
 Dialogue Behavior: {persona.get('dialogue_behavior', 'Conversational')}
 
-Generate an opening line (1-2 sentences) that this character would say to start a conversation. 
+Generate an opening line (2-3 sentences) that this character would say to start a conversation. 
 Keep it natural and in-character. Return only the dialogue text, no quotes or formatting."""
 
         # Add optional persona details if available
@@ -211,83 +211,3 @@ Keep it natural and in-character. Return only the dialogue text, no quotes or fo
             "opening_lines": openings,
             "metadata": aggregated_metadata
         }
-    
-    def get_model_info(self) -> Dict[str, Any]:
-        """
-        Get information about the current model configuration.
-        
-        Returns:
-            Dictionary with model information
-        """
-        return {
-            "model": self.model,
-            "api_key_set": bool(self.api_key),
-            "api_key_length": len(self.api_key) if self.api_key else 0
-        }
-    
-    def update_model(self, new_model: str) -> None:
-        """
-        Update the model being used.
-        
-        Args:
-            new_model: New OpenAI model name
-        """
-        self.model = new_model
-    
-    def update_api_key(self, new_api_key: str) -> None:
-        """
-        Update the API key being used.
-        
-        Args:
-            new_api_key: New OpenAI API key
-        """
-        self.api_key = new_api_key
-        self.client = OpenAI(api_key=self.api_key)
-
-
-# Example usage
-if __name__ == "__main__":
-    # Example persona
-    example_persona = {
-        "role": "Wise mentor",
-        "tone": "Calm and encouraging",
-        "traits": ["Patient", "Knowledgeable", "Supportive"],
-        "dialogue_behavior": "Asks guiding questions and provides gentle wisdom",
-        "name": "Master Chen",
-        "quirks": ["Speaks in metaphors", "Always has tea ready"]
-    }
-    
-    try:
-        # Create generator instance
-        generator = ConversationGenerator()
-        
-        # Get model info
-        print("Model Info:", generator.get_model_info())
-        print()
-        
-        # Generate single opening line
-        result = generator.generate_opening_line(example_persona, context="in a peaceful garden")
-        print("Single Opening Line:")
-        print(f"'{result['opening_line']}'")
-        print(f"Response time: {result['metadata']['response_time']}s")
-        print(f"Tokens used: {result['metadata']['tokens']['total_tokens']}")
-        
-        print("\n" + "="*50 + "\n")
-        
-        # Generate multiple opening lines
-        multi_result = generator.generate_multiple_openings(
-            example_persona, 
-            count=3, 
-            context="at a meditation retreat",
-            temperature_range=(0.6, 1.0)
-        )
-        print("Multiple Opening Lines:")
-        for i, line in enumerate(multi_result["opening_lines"], 1):
-            print(f"{i}. '{line}'")
-        print(f"\nTotal tokens: {multi_result['metadata']['total_tokens']}")
-        print(f"Average response time: {multi_result['metadata']['average_response_time']}s")
-        print(f"Temperature range: {multi_result['metadata']['temperature_range']}")
-        
-    except Exception as e:
-        print(f"Error: {e}")
-        print("Make sure OPENAI_API_KEY is set in your environment variables.")

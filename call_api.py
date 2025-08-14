@@ -10,23 +10,20 @@ import json
 import requests
 from pathlib import Path
 
+INPUT_CODE_START = 9
+INPUT_CODE_END = 24
 
-def main() -> None:
+def call_api(input_file, output_file):
     url = "http://localhost:8000/persona/generate"
-    
-    inputs_folder = Path("./persona_generator/testdata/inputs")
-    input_filename = "George_Washington.txt"
-    input_file = inputs_folder / input_filename
-    
-    outputs_folder = Path("./persona_generator/testdata/outputs")
-    output_filename = f"{input_filename.replace('.txt', '')}_response.json"
-    output_file = outputs_folder / output_filename
-    
+    input_filename = input_file.name
     if not input_file.exists():
         print(f"❌ Input file not found: {input_file}")
         return
     
     description = input_file.read_text(encoding="utf-8").strip()
+    print(f"🎭 Using persona: {input_filename}")
+    print(f"📝 Description: {description}")
+    print()
     payload = {"description": description}
 
     try:
@@ -37,8 +34,8 @@ def main() -> None:
         response_data = response.json()
         
         # Print formatted response
-        print("📋 Generated Persona:")
-        print(json.dumps(response_data, indent=2, ensure_ascii=False))
+        # print("📋 Generated Persona:")
+        # print(json.dumps(response_data, indent=2, ensure_ascii=False))
         
         # Save formatted response to output file
         output_file.write_text(json.dumps(response_data, indent=2, ensure_ascii=False), encoding="utf-8")
@@ -49,6 +46,31 @@ def main() -> None:
         if hasattr(e, 'response') and e.response is not None:
             print(f"Status code: {e.response.status_code}")
             print(f"Response: {e.response.text}")
+
+
+def main() -> None:
+    
+    inputs_folder = Path("./persona_generator/testdata/inputs")
+    outputs_folder = Path("./persona_generator/testdata/outputs")
+    
+    # Find input file using prefix matching for double-digit numbers
+    for i in range(INPUT_CODE_START, INPUT_CODE_END+1):
+        input_prefix = f"{i:02d}"  # Convert to 2-digit format (e.g., 1 -> "01")
+        input_files = list(inputs_folder.glob(f"{input_prefix}_*.txt"))
+        
+        if not input_files:
+            print(f"❌ No input file found with prefix '{input_prefix}' in {inputs_folder}")
+            print("Available files:")
+            for file in sorted(inputs_folder.glob("*.txt")):
+                print(f"  - {file.name}")
+            return
+        input_file = input_files[0]
+        input_filename = input_file.name
+        
+        output_filename = f"{input_filename.replace('.txt', '')}_response.json"
+        output_file = outputs_folder / output_filename
+        call_api(input_file, output_file)
+    
 
 
 if __name__ == "__main__":
