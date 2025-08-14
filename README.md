@@ -56,7 +56,7 @@ python run_mvp.py
 
 ### Direct Function Call
 ```python
-from persona_generator.generator import generate_persona
+from persona_generator.PersonaGenerator import PersonaGenerator
 
 persona = generate_persona("Grumpy old programmer")
 print(persona)
@@ -76,13 +76,14 @@ curl -X POST "http://localhost:8000/persona/generate" \
 ```
 vpg/
 ├── persona_generator/
-│   ├── generator.py          # Core generation logic
-│   ├── validator.py          # Schema validation  
+│   ├── PersonaGenerator.py   # Persona generation logic
+│   ├── PersonaValidator.py   # Schema validation  
 │   └── schema/
-│       └── persona_schema_v1.json
+│       └── persona_schema_v1.2.json
+├── conversation_generator/
+│   └── ConversationGenerator.py     # Conversation generation logic
 ├── api/
 │   └── endpoints.py          # FastAPI server
-├── test_mvp.py              # Simple test script
 ├── run_mvp.py               # Startup script
 └── requirements.txt         # Dependencies
 ```

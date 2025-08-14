@@ -7,7 +7,7 @@ import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from persona_generator.PersonaGenerator import PersonaGenerator
-from conversation_generator.generator import ConversationGenerator
+from conversation_generator.ConversationGenerator import ConversationGenerator
 
 app = FastAPI(title="VPG MVP API", version="1.0.0")
 
@@ -42,8 +42,8 @@ async def start_conversation(request: Dict[str, Any]):
     try:
         description = request.get("description")
         context = request.get("context")  # Optional
-        temperature = request.get("temperature", 0.8)
-        max_tokens = request.get("max_tokens", 100)
+        temperature = request.get("temperature", 1.0)
+        max_completion_tokens = request.get("max_completion_tokens", 100)
         
         if not description:
             raise HTTPException(status_code=400, detail="Description is required")
@@ -61,7 +61,7 @@ async def start_conversation(request: Dict[str, Any]):
             persona=persona,
             context=context,
             temperature=temperature,
-            max_tokens=max_tokens
+            max_completion_tokens=max_completion_tokens
         )
         
         return {
@@ -80,8 +80,8 @@ async def continue_conversation(request: Dict[str, Any]):
         persona = request.get("persona")
         conversation_history = request.get("conversation_history")
         context = request.get("context")  # Optional
-        temperature = request.get("temperature", 0.8)
-        max_tokens = request.get("max_tokens", 150)
+        temperature = request.get("temperature", 1.0)
+        max_completion_tokens = request.get("max_completion_tokens", 150)
         
         if not persona:
             raise HTTPException(status_code=400, detail="Persona is required")
@@ -97,7 +97,7 @@ async def continue_conversation(request: Dict[str, Any]):
             conversation_history=conversation_history,
             context=context,
             temperature=temperature,
-            max_tokens=max_tokens
+            max_completion_tokens=max_completion_tokens
         )
         
         return {

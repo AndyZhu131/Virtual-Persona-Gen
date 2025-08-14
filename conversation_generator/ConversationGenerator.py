@@ -1,4 +1,4 @@
-# conversation_generator/generator.py
+# conversation_generator/ConversationGenerator.py
 # Requirements:
 #   pip install openai==1.* python-dotenv
 # Env:
@@ -19,26 +19,49 @@ class ConversationGenerator:
     A class for generating conversation opening lines based on persona characteristics.
     """
     
-    def __init__(self, api_key: Optional[str] = None, model: Optional[str] = None):
+    def __init__(self, api_key: str, model: str):
         """
         Initialize the ConversationGenerator.
         
         Args:
-            api_key: OpenAI API key (if not provided, will try to load from env)
-            model: OpenAI model to use (if not provided, will use env or default)
+            api_key: OpenAI API key
+            model: OpenAI model to use
         """
-        # Load environment variables
-        load_dotenv()
-        
-        # Set API key and model
-        self.api_key = api_key or os.getenv("OPENAI_API_KEY")
-        self.model = model or os.getenv("OPENAI_MODEL")
-        
-        if not self.api_key:
-            raise RuntimeError("OPENAI_API_KEY is not set. Please provide it or set it in environment variables.")
+        self.api_key = api_key
+        self.model = model
         
         # Initialize OpenAI client
         self.client = OpenAI(api_key=self.api_key)
+    
+    # --------- Factory Methods ---------
+    @classmethod
+    def from_env(
+        cls,
+        default_model: str = "gpt-5-mini"
+    ) -> "ConversationGenerator":
+        """
+        Create a ConversationGenerator using environment variables.
+        
+        Args:
+            default_model: Default model to use if OPENAI_MODEL is not set
+            
+        Returns:
+            ConversationGenerator instance
+            
+        Raises:
+            RuntimeError: If OPENAI_API_KEY is not set
+        """
+        load_dotenv()
+        api_key = os.getenv("OPENAI_API_KEY")
+        if not api_key:
+            raise RuntimeError("OPENAI_API_KEY is not set")
+
+        model = os.getenv("OPENAI_MODEL", default_model)
+
+        return cls(
+            api_key=api_key,
+            model=model
+        )
     
     def _build_conversation_prompt(self, persona: Dict[str, Any]) -> str:
         """
@@ -72,8 +95,8 @@ Keep it natural and in-character. Return only the dialogue text, no quotes or fo
     def generate_opening_line(self, 
                              persona: Dict[str, Any], 
                              context: Optional[str] = None,
-                             temperature: float = 0.8,
-                             max_tokens: int = 100) -> Dict[str, Any]:
+                             temperature: float = 1.0,
+                             max_completion_tokens: int = 100) -> Dict[str, Any]:
         """
         Generate an opening line for conversation based on persona.
         
@@ -81,7 +104,7 @@ Keep it natural and in-character. Return only the dialogue text, no quotes or fo
             persona: Dictionary containing persona information
             context: Optional context for the conversation (e.g., "at a coffee shop")
             temperature: Creativity level for response generation (0.0 to 2.0)
-            max_tokens: Maximum tokens for the response (default 100 for opening lines)
+            max_completion_tokens: Maximum completion tokens for the response (default 100 for opening lines)
         
         Returns:
             Dictionary with opening_line and metadata
@@ -110,7 +133,7 @@ Keep it natural and in-character. Return only the dialogue text, no quotes or fo
                 model=self.model,
                 messages=messages,
                 temperature=temperature,
-                max_tokens=max_tokens
+                max_completion_tokens=max_completion_tokens
             )
             
             # Calculate response time
@@ -150,8 +173,8 @@ Keep it natural and in-character. Return only the dialogue text, no quotes or fo
                                      persona: Dict[str, Any],
                                      conversation_history: List[Dict[str, str]],
                                      context: Optional[str] = None,
-                                     temperature: float = 0.8,
-                                     max_tokens: int = 150) -> Dict[str, Any]:
+                                     temperature: float = 1.0,
+                                     max_completion_tokens: int = 150) -> Dict[str, Any]:
         """
         Generate a response in an ongoing conversation based on persona and conversation history.
         
@@ -160,7 +183,7 @@ Keep it natural and in-character. Return only the dialogue text, no quotes or fo
             conversation_history: List of previous messages in format [{"role": "user", "content": "..."}, {"role": "assistant", "content": "..."}]
             context: Optional context for the conversation (e.g., "at a coffee shop")
             temperature: Creativity level for response generation (0.0 to 2.0)
-            max_tokens: Maximum tokens for the response (default 150 for conversation responses)
+            max_completion_tokens: Maximum tokens for the response (default 150 for conversation responses)
         
         Returns:
             Dictionary with response and metadata
@@ -198,7 +221,7 @@ Keep responses conversational and engaging, typically 2-4 sentences.
                 model=self.model,
                 messages=messages,
                 temperature=temperature,
-                max_tokens=max_tokens
+                max_completion_tokens=max_completion_tokens
             )
             
             # Calculate response time
