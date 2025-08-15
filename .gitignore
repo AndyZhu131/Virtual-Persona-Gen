@@ -73,3 +73,4 @@ conversation_generator/testdata
 # Temporary files
 *.tmp
 *.temp
+temp*

@@ -42,7 +42,6 @@ async def start_conversation(request: Dict[str, Any]):
     try:
         description = request.get("description")
         context = request.get("context")  # Optional
-        temperature = request.get("temperature", 1.0)
         max_completion_tokens = request.get("max_completion_tokens", 100)
         
         if not description:
@@ -60,7 +59,6 @@ async def start_conversation(request: Dict[str, Any]):
         opening_result = conversation_generator.generate_opening_line(
             persona=persona,
             context=context,
-            temperature=temperature,
             max_completion_tokens=max_completion_tokens
         )
         
@@ -80,7 +78,6 @@ async def continue_conversation(request: Dict[str, Any]):
         persona = request.get("persona")
         conversation_history = request.get("conversation_history")
         context = request.get("context")  # Optional
-        temperature = request.get("temperature", 1.0)
         max_completion_tokens = request.get("max_completion_tokens", 150)
         
         if not persona:
@@ -96,7 +93,6 @@ async def continue_conversation(request: Dict[str, Any]):
             persona=persona,
             conversation_history=conversation_history,
             context=context,
-            temperature=temperature,
             max_completion_tokens=max_completion_tokens
         )
         

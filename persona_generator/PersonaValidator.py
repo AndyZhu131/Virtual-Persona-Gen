@@ -2,7 +2,7 @@
 # Requirements:
 #   pip install jsonschema
 # Env:
-#   export SCHEMA_PATH=path/to/persona_schema_v1.2.json
+#   export SCHEMA_PATH=path/to/persona_schema_v1.1.json
 
 import os
 import json

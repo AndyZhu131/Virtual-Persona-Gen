@@ -4,7 +4,7 @@
 # Env:
 #   export OPENAI_API_KEY=sk-xxx
 #   export OPENAI_MODEL=gpt-4o-mini        # optional
-#   export SCHEMA_PATH=path/to/persona_schema_v1.2.json  # optional
+#   export SCHEMA_PATH=path/to/persona_schema_v1.1.json  # optional
 
 import os
 import json
@@ -31,7 +31,6 @@ class PersonaGenerator:
         model: str,
         api_key: str,
         validator: Optional[PersonaValidator] = None,
-        temperature: float = 1.0,
     ) -> None:
         """
         Args:
@@ -39,12 +38,12 @@ class PersonaGenerator:
             model: OpenAI model name (e.g., 'gpt-5-nano').
             api_key: OpenAI API key.
             validator: Optional PersonaValidator instance. If None, one will be created.
-            temperature: Sampling temperature for the LLM.
+
         """
         self.schema_path = schema_path
         self.model = model
         self.api_key = api_key
-        self.temperature = temperature
+
 
         # Load schema once for building function definition
         self._schema: Dict[str, Any] = self._load_schema(schema_path)
@@ -62,8 +61,8 @@ class PersonaGenerator:
         cls,
         validator: Optional[PersonaValidator] = None,
         default_model: str = "gpt-5-nano",
-        default_schema_path: str = "persona_generator/schema/persona_schema_v1.2.json",
-        temperature: float = 1.0,
+        default_schema_path: str = "persona_generator/schema/persona_schema_v1.1.json",
+
     ) -> "PersonaGenerator":
         """
         Create a PersonaGenerator using environment variables.
@@ -85,7 +84,7 @@ class PersonaGenerator:
             model=model,
             api_key=api_key,
             validator=validator,
-            temperature=temperature,
+
         )
 
     # --------- Core steps ---------
@@ -153,18 +152,40 @@ class PersonaGenerator:
         """
         Call OpenAI Responses API with function calling and return parsed persona dict.
         """
+        # Responses API requires flattened tool structure
         resp = self._client.responses.create(
             model=self.model,
             input=api_input,
-            tools=[{"type": "function", "function": self._function_def}],
-            tool_choice={"type": "function", "function": {"name": self._function_def["name"]}},
-            temperature=self.temperature,
+            tools=[{
+                "type": "function",
+                "name": self._function_def["name"],
+                "description": self._function_def["description"],
+                "parameters": self._function_def["parameters"]
+            }],
+            tool_choice={"type": "function", "name": self._function_def["name"]},
+
         )
 
-        tool_calls = resp.output[0].tool_calls
-        if not tool_calls:
+        # Extract the function call arguments from the OpenAI Responses API response
+        tool_calls = getattr(resp, "output", None)
+        if not tool_calls or not isinstance(tool_calls, list):
             raise ValueError("Model did not perform a function call. Check prompts and model.")
-        arguments_str = tool_calls[0].function.arguments
+
+        # Find the first function call with arguments
+        arguments_str = None
+        for call in tool_calls:
+            # OpenAI Responses API: function call is typically in a ResponseFunctionToolCall object
+            if hasattr(call, "arguments") and call.arguments:
+                arguments_str = call.arguments
+                break
+            # Fallback: check for nested .function.arguments (legacy/other API shapes)
+            if hasattr(call, "function") and hasattr(call.function, "arguments"):
+                arguments_str = call.function.arguments
+                break
+
+        if not arguments_str:
+            raise ValueError("No function call arguments found in model response.")
+
         try:
             return json.loads(arguments_str)
         except json.JSONDecodeError as e:
@@ -173,7 +194,7 @@ class PersonaGenerator:
     # --------- Public API ---------
     def generate(
         self,
-        user_input: str,
+        user_input: str,    
         recommend_llm_prompt_injection: Optional[str] = None,
         extra_guidelines: Optional[List[str]] = None,
         clean_with_validator: bool = False,

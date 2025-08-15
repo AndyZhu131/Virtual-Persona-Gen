@@ -95,7 +95,6 @@ Keep it natural and in-character. Return only the dialogue text, no quotes or fo
     def generate_opening_line(self, 
                              persona: Dict[str, Any], 
                              context: Optional[str] = None,
-                             temperature: float = 1.0,
                              max_completion_tokens: int = 300) -> Dict[str, Any]:
         """
         Generate an opening line for conversation based on persona.
@@ -103,7 +102,6 @@ Keep it natural and in-character. Return only the dialogue text, no quotes or fo
         Args:
             persona: Dictionary containing persona information
             context: Optional context for the conversation (e.g., "at a coffee shop")
-            temperature: Creativity level for response generation (0.0 to 2.0)
             max_completion_tokens: Maximum completion tokens for the response (default 100 for opening lines)
         
         Returns:
@@ -128,7 +126,7 @@ Keep it natural and in-character. Return only the dialogue text, no quotes or fo
         print(f"🔍 DEBUG - ConversationGenerator Prompt:")
         print(f"📝 System: {api_input[0]['content']}")
         print(f"📝 User: {api_input[1]['content']}")
-        print(f"🎛️ Settings: temperature={temperature}, max_completion_tokens={max_completion_tokens}")
+        print(f"🎛️ Settings: max_completion_tokens={max_completion_tokens}")
         print("=" * 60)
         
         # Record start time
@@ -139,7 +137,6 @@ Keep it natural and in-character. Return only the dialogue text, no quotes or fo
             resp = self.client.responses.create(
                 model=self.model,
                 input=api_input,  # Responses API uses 'input' instead of 'messages'
-                temperature=temperature,
                 max_completion_tokens=max_completion_tokens
             )
             
@@ -169,7 +166,6 @@ Keep it natural and in-character. Return only the dialogue text, no quotes or fo
                 "response_time": round(response_time, 3),
                 "model": self.model,
                 "tokens": token_info,
-                "temperature": temperature,
                 "context": context
             }
             
@@ -187,7 +183,6 @@ Keep it natural and in-character. Return only the dialogue text, no quotes or fo
                                      persona: Dict[str, Any],
                                      conversation_history: List[Dict[str, str]],
                                      context: Optional[str] = None,
-                                     temperature: float = 1.0,
                                      max_completion_tokens: int = 150) -> Dict[str, Any]:
         """
         Generate a response in an ongoing conversation based on persona and conversation history.
@@ -196,7 +191,6 @@ Keep it natural and in-character. Return only the dialogue text, no quotes or fo
             persona: Dictionary containing persona information
             conversation_history: List of previous messages in format [{"role": "user", "content": "..."}, {"role": "assistant", "content": "..."}]
             context: Optional context for the conversation (e.g., "at a coffee shop")
-            temperature: Creativity level for response generation (0.0 to 2.0)
             max_completion_tokens: Maximum tokens for the response (default 150 for conversation responses)
         
         Returns:
@@ -234,7 +228,6 @@ Keep responses conversational and engaging, typically 2-4 sentences.
             resp = self.client.responses.create(
                 model=self.model,
                 input=api_input,  # Responses API uses 'input' instead of 'messages'
-                temperature=temperature,
                 max_completion_tokens=max_completion_tokens
             )
             
@@ -257,7 +250,7 @@ Keep responses conversational and engaging, typically 2-4 sentences.
                 "response_time": round(response_time, 3),
                 "model": self.model,
                 "tokens": token_info,
-                "temperature": temperature,
+
                 "context": context,
                 "conversation_length": len(conversation_history)
             }
