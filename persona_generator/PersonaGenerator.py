@@ -166,14 +166,25 @@ class PersonaGenerator:
 
         )
 
+        print(f"🔍 DEBUG - Full response: {resp}")
+
         # Extract the function call arguments from the OpenAI Responses API response
         tools = getattr(resp, "tools", None)
-        if not tools or not isinstance(tools, list) or len(tools) == 0:
+        if not tools or len(tools) == 0:
             raise ValueError("Model did not perform a function call. Check prompts and model.")
 
-        # Find the first function call with arguments
-        # Directly extract arguments from the OpenAI Responses API response
-        arguments_str = getattr(resp.output, "arguments", None)
+        # Iterate through the list of outputs and extract the arguments
+        arguments_str = None
+        outputs = getattr(resp, "output", None)
+        if outputs and isinstance(outputs, list):
+            for output in outputs:
+                args = getattr(output, "arguments", None)
+                if args:
+                    arguments_str = args
+                    break
+        else:
+            # Fallback for single output object (legacy or unexpected structure)
+            arguments_str = resp.output.arguments
 
         if not arguments_str:
             raise ValueError("No function call arguments found in model response.")

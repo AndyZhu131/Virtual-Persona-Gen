@@ -19,6 +19,9 @@ class ConversationGenerator:
     A class for generating conversation opening lines based on persona characteristics.
     """
     
+    # Global constant for max output tokens
+    MAX_OUTPUT_TOKENS = 500
+    
     def __init__(self, api_key: str, model: str):
         """
         Initialize the ConversationGenerator.
@@ -95,7 +98,7 @@ Keep it natural and in-character. Return only the dialogue text, no quotes or fo
     def generate_opening_line(self, 
                              persona: Dict[str, Any], 
                              context: Optional[str] = None,
-                             max_output_tokens: int = 300) -> Dict[str, Any]:
+                             max_output_tokens: int = MAX_OUTPUT_TOKENS) -> Dict[str, Any]:
         """
         Generate an opening line for conversation based on persona.
         
@@ -143,15 +146,11 @@ Keep it natural and in-character. Return only the dialogue text, no quotes or fo
             # Calculate response time
             response_time = time.time() - start_time
             
+            with open("response.temp", "w", encoding="utf-8") as f:
+                f.write(str(resp))
             # Extract the opening line (Responses API structure)
-            opening_line = resp.output[0].content.strip()
+            opening_line = resp.output[0].content[0].text.strip()
             
-            # Debug: Print the response from OpenAI
-            print(f"🔍 DEBUG - OpenAI Response:")
-            print(f"💬 Opening Line: '{opening_line}'")
-            print(f"🏁 Finish Reason: {resp.output[0].finish_reason}")
-            print(f"🎯 Response Length: {len(opening_line)} characters")
-            print("=" * 60)
             
             # Extract token usage
             usage = resp.usage
@@ -183,7 +182,7 @@ Keep it natural and in-character. Return only the dialogue text, no quotes or fo
                                      persona: Dict[str, Any],
                                      conversation_history: List[Dict[str, str]],
                                      context: Optional[str] = None,
-                                     max_output_tokens: int = 150) -> Dict[str, Any]:
+                                     max_output_tokens: int = MAX_OUTPUT_TOKENS) -> Dict[str, Any]:
         """
         Generate a response in an ongoing conversation based on persona and conversation history.
         

@@ -27,11 +27,10 @@ def call_api(input_file, output_file):
     payload = {
         "description": description,
         "context": "general conversation",
-        "max_output_tokens": 100  # Shorter responses for faster generation
     }
 
     try:
-        response = requests.post(url, json=payload, timeout=90)  # Increased for dual API calls
+        response = requests.post(url, json=payload, timeout=30)  # Increased for dual API calls
         response.raise_for_status()  # Raises an exception for 4XX/5XX status codes
         
         # Parse and format the JSON response

@@ -42,7 +42,7 @@ async def start_conversation(request: Dict[str, Any]):
     try:
         description = request.get("description")
         context = request.get("context")  # Optional
-        max_output_tokens = request.get("max_output_tokens", 100)
+        max_output_tokens = request.get("max_output_tokens")
         
         if not description:
             raise HTTPException(status_code=400, detail="Description is required")
@@ -78,7 +78,7 @@ async def continue_conversation(request: Dict[str, Any]):
         persona = request.get("persona")
         conversation_history = request.get("conversation_history")
         context = request.get("context")  # Optional
-        max_output_tokens = request.get("max_output_tokens", 150)
+        max_output_tokens = request.get("max_output_tokens")
         
         if not persona:
             raise HTTPException(status_code=400, detail="Persona is required")

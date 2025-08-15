@@ -33,10 +33,6 @@ def call_api(input_file, output_file):
         # Parse and format the JSON response
         response_data = response.json()
         
-        # Print formatted response
-        # print("📋 Generated Persona:")
-        # print(json.dumps(response_data, indent=2, ensure_ascii=False))
-        
         # Save formatted response to output file
         output_file.write_text(json.dumps(response_data, indent=2, ensure_ascii=False), encoding="utf-8")
         print(f"\n💾 Response saved to: {output_file}")
