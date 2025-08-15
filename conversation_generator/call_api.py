@@ -27,7 +27,7 @@ def call_api(input_file, output_file):
     payload = {
         "description": description,
         "context": "general conversation",
-        "max_completion_tokens": 100  # Shorter responses for faster generation
+        "max_output_tokens": 100  # Shorter responses for faster generation
     }
 
     try:
