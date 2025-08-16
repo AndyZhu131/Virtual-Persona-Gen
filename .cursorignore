@@ -69,7 +69,7 @@ Thumbs.db
 *.log
 logs/
 *.tmp
-*.temp
+# *.temp
 
 # Large data files
 *.csv

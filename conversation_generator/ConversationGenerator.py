@@ -20,7 +20,7 @@ class ConversationGenerator:
     """
     
     # Global constant for max output tokens
-    MAX_OUTPUT_TOKENS = 500
+    MAX_OUTPUT_TOKENS = 1000
     
     def __init__(self, api_key: str, model: str):
         """
@@ -95,6 +95,106 @@ Keep it natural and in-character. Return only the dialogue text, no quotes or fo
         
         return prompt
     
+    def _call_openai_function(self, 
+                             api_input: List[Dict[str, str]], 
+                             max_output_tokens: int = MAX_OUTPUT_TOKENS,
+                             context: Optional[str] = None,
+                             operation_type: str = "conversation",
+                             reasoning_effort: Optional[str] = "low") -> Dict[str, Any]:
+                             
+        """
+        Centralized method to call OpenAI API and handle response validation.
+        
+        Args:
+            api_input: List of message dictionaries for the API call
+            max_output_tokens: Maximum tokens for the response
+            context: Optional context for the conversation
+            operation_type: Type of operation for logging/debugging
+            
+        Returns:
+            Dictionary with response content and metadata
+            
+        Raises:
+            Exception: If API call fails or response is invalid
+        """
+        # Record start time
+        start_time = time.time()
+        
+        try:
+            # Call OpenAI Responses API
+            resp = self.client.responses.create(
+                model=self.model,
+                input=api_input,
+                max_output_tokens=max_output_tokens,
+                reasoning={"effort": reasoning_effort}
+            )
+            
+            # Calculate response time
+            response_time = time.time() - start_time
+            
+            # Save response for debugging
+            with open(f"response_{operation_type}.temp", "w", encoding="utf-8") as f:
+                f.write(str(resp))
+            
+            # Extract and validate response content
+            if not resp.output or len(resp.output) == 0:
+                raise Exception(f"No output received from OpenAI for {operation_type}")
+
+            # Look for content in the output
+            response_content = None
+            
+            # Iterate through output items to find the message with content
+            for output_item in resp.output:
+                # Check if this is a message item with content
+                if hasattr(output_item, 'content') and output_item.content:
+                    # The content is a list, so iterate through it
+                    for content_part in output_item.content:
+                        if hasattr(content_part, 'text') and content_part.text:
+                            text = content_part.text.strip()
+                            if text:
+                                response_content = text
+                                break
+                    if response_content:
+                        break
+                
+                # Check if there's direct text content (fallback)
+                if hasattr(output_item, 'text') and output_item.text:
+                    content = output_item.text.strip()
+                    if content:
+                        response_content = content
+                        break
+            
+            # If no content found, raise exception
+            if not response_content:
+                raise Exception(f"Could not extract content from OpenAI response for {operation_type}. Response structure: {resp.output}")
+            
+            # Extract token usage
+            usage = resp.usage
+            token_info = {
+                "input_tokens": usage.input_tokens if usage else None,
+                "output_tokens": usage.output_tokens if usage else None,
+                "total_tokens": usage.total_tokens if usage else None
+            }
+            
+            # Build metadata
+            metadata = {
+                "response_time": round(response_time, 3),
+                "model": self.model,
+                "tokens": token_info,
+                "context": context,
+                "operation_type": operation_type
+            }
+            
+            return {
+                "content": response_content,
+                "metadata": metadata
+            }
+            
+        except Exception as e:
+            # Calculate response time even if there's an error
+            response_time = time.time() - start_time
+            raise Exception(f"OpenAI API call failed after {round(response_time, 3)}s: {str(e)}")
+    
     def generate_opening_line(self, 
                              persona: Dict[str, Any], 
                              context: Optional[str] = None,
@@ -125,58 +225,18 @@ Keep it natural and in-character. Return only the dialogue text, no quotes or fo
             {"role": "user", "content": base_prompt}
         ]
         
-        # Debug: Print the prompt being sent to OpenAI
-        print(f"🔍 DEBUG - ConversationGenerator Prompt:")
-        print(f"📝 System: {api_input[0]['content']}")
-        print(f"📝 User: {api_input[1]['content']}")
-        print(f"🎛️ Settings: max_output_tokens={max_output_tokens}")
-        print("=" * 60)
+        # Use centralized OpenAI call function
+        result = self._call_openai_function(
+            api_input=api_input,
+            max_output_tokens=max_output_tokens,
+            context=context,
+            operation_type="opening_line"
+        )
         
-        # Record start time
-        start_time = time.time()
-        
-        try:
-            # Call OpenAI Responses API
-            resp = self.client.responses.create(
-                model=self.model,
-                input=api_input,  # Responses API uses 'input' instead of 'messages'
-                max_output_tokens=max_output_tokens
-            )
-            
-            # Calculate response time
-            response_time = time.time() - start_time
-            
-            with open("response.temp", "w", encoding="utf-8") as f:
-                f.write(str(resp))
-            # Extract the opening line (Responses API structure)
-            opening_line = resp.output[0].content[0].text.strip()
-            
-            
-            # Extract token usage
-            usage = resp.usage
-            token_info = {
-                "prompt_tokens": usage.prompt_tokens if usage else None,
-                "completion_tokens": usage.completion_tokens if usage else None,
-                "total_tokens": usage.total_tokens if usage else None
-            }
-            
-            # Build metadata
-            metadata = {
-                "response_time": round(response_time, 3),
-                "model": self.model,
-                "tokens": token_info,
-                "context": context
-            }
-            
-            return {
-                "opening_line": opening_line,
-                "metadata": metadata
-            }
-            
-        except Exception as e:
-            # Calculate response time even if there's an error
-            response_time = time.time() - start_time
-            raise Exception(f"OpenAI API call failed after {round(response_time, 3)}s: {str(e)}")
+        return {
+            "opening_line": result["content"],
+            "metadata": result["metadata"]
+        }
 
     def generate_conversation_response(self,
                                      persona: Dict[str, Any],
@@ -219,46 +279,18 @@ Keep responses conversational and engaging, typically 2-4 sentences.
         if context:
             api_input.append({"role": "system", "content": f"Context: {context}"})
         
-        # Record start time
-        start_time = time.time()
+        # Use centralized OpenAI call function
+        result = self._call_openai_function(
+            api_input=api_input,
+            max_output_tokens=max_output_tokens,
+            context=context,
+            operation_type="conversation_response"
+        )
         
-        try:
-            # Call OpenAI Responses API
-            resp = self.client.responses.create(
-                model=self.model,
-                input=api_input,  # Responses API uses 'input' instead of 'messages'
-                max_output_tokens=max_output_tokens
-            )
-            
-            # Calculate response time
-            response_time = time.time() - start_time
-            
-            # Extract the conversation response from resp.output.content.text
-            conversation_response = resp.output.content.text.strip()
-            # Extract token usage
-            usage = resp.usage
-            token_info = {
-                "prompt_tokens": usage.prompt_tokens if usage else None,
-                "completion_tokens": usage.completion_tokens if usage else None,
-                "total_tokens": usage.total_tokens if usage else None
-            }
-            
-            # Build metadata
-            metadata = {
-                "response_time": round(response_time, 3),
-                "model": self.model,
-                "tokens": token_info,
-
-                "context": context,
-                "conversation_length": len(conversation_history)
-            }
-            
-            return {
-                "conversation_response": conversation_response,
-                "metadata": metadata
-            }
-            
-        except Exception as e:
-            # Calculate response time even if there's an error
-            response_time = time.time() - start_time
-            raise Exception(f"OpenAI API call failed after {round(response_time, 3)}s: {str(e)}")
+        # Add conversation-specific metadata
+        result["metadata"]["conversation_length"] = len(conversation_history)
+        
+        return {
+            "conversation_response": result["content"],
+            "metadata": result["metadata"]
+        }

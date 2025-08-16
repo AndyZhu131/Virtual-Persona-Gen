@@ -10,8 +10,8 @@ import json
 import requests
 from pathlib import Path
 
-INPUT_CODE_START = 1
-INPUT_CODE_END = 1
+INPUT_CODE_START = 17
+INPUT_CODE_END = 24
 
 def call_api(input_file, output_file):
     url = "http://localhost:8000/conversation/start"
@@ -30,7 +30,8 @@ def call_api(input_file, output_file):
     }
 
     try:
-        response = requests.post(url, json=payload, timeout=30)  # Increased for dual API calls
+        timeout = 60
+        response = requests.post(url, json=payload, timeout=timeout)  # Increased for dual API calls
         response.raise_for_status()  # Raises an exception for 4XX/5XX status codes
         
         # Parse and format the JSON response
@@ -50,7 +51,7 @@ def call_api(input_file, output_file):
         print(f"💾 Response saved to: {output_file}")
         
     except requests.exceptions.Timeout as e:
-        print(f"⏰ Request timed out after 30 seconds")
+        print(f"⏰ Request timed out after {timeout} seconds")
         
     except requests.exceptions.RequestException as e:
         print(f"❌ Request failed: {e}")
