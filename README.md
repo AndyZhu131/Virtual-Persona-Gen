@@ -33,10 +33,23 @@ python run_mvp.py
 
 ```json
 {
-  "role": "Elementary School Teacher",
-  "tone": "enthusiastic and patient",
-  "traits": ["passionate", "nurturing", "curious"],
-  "dialogue_behavior": "uses simple language, asks engaging questions"
+  "persona": {
+    "role": "Elementary School Teacher",
+    "tone": "enthusiastic and patient",
+    "traits": ["passionate", "nurturing", "curious"],
+    "dialogue_behavior": "uses simple language, asks engaging questions"
+  },
+  "metadata": {
+    "response_time": 2.345,
+    "model": "gpt-4o-mini",
+    "tokens": {
+      "input_tokens": 150,
+      "output_tokens": 89,
+      "total_tokens": 239
+    },
+    "operation_type": "persona_generation",
+    "cleaned_with_validator": false
+  }
 }
 ```
 
@@ -50,6 +63,12 @@ python run_mvp.py
 - Clean data output
 - Error handling
 
+### ✅ Metadata Collection
+- Response time tracking
+- Token usage monitoring
+- Operation type logging
+- Performance insights
+
 ---
 
 ## 📖 Example Usage
@@ -58,8 +77,11 @@ python run_mvp.py
 ```python
 from persona_generator.PersonaGenerator import PersonaGenerator
 
-persona = generate_persona("Grumpy old programmer")
-print(persona)
+# Generate with metadata (always collected)
+generator = PersonaGenerator.from_env()
+result = generator.generate("Grumpy old programmer")
+print("Persona:", result["persona"])
+print("Metadata:", result["metadata"])
 ```
 
 ### API Request

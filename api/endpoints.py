@@ -27,12 +27,12 @@ async def create_persona(request: Dict[str, Any]):
         generator = PersonaGenerator.from_env()
         
         # Generate persona
-        persona = generator.generate(
+        result = generator.generate(
             user_input=description,
             clean_with_validator=False  # Clean the output using PersonaValidator
         )
         
-        return persona
+        return result
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -49,7 +49,7 @@ async def start_conversation(request: Dict[str, Any]):
         
         # Generate persona
         persona_generator = PersonaGenerator.from_env()
-        persona = persona_generator.generate(
+        persona_result = persona_generator.generate(
             user_input=description,
             clean_with_validator=False
         )
@@ -57,15 +57,21 @@ async def start_conversation(request: Dict[str, Any]):
         # Generate opening line
         conversation_generator = ConversationGenerator.from_env()
         opening_result = conversation_generator.generate_opening_line(
-            persona=persona,
+            persona=persona_result["persona"],
             context=context,
             max_output_tokens=max_output_tokens
         )
         
+        # Combine metadata from both operations
+        combined_metadata = {
+            "persona_generation": persona_result["metadata"],
+            "opening_line_generation": opening_result["metadata"]
+        }
+        
         return {
-            "persona": persona,
+            "persona": persona_result["persona"],
             "opening_line": opening_result["opening_line"],
-            "metadata": opening_result["metadata"]
+            "metadata": combined_metadata
         }
         
     except Exception as e:

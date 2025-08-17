@@ -8,6 +8,7 @@
 
 import os
 import json
+import time
 from typing import Dict, Any, Optional, List
 
 from dotenv import load_dotenv
@@ -150,49 +151,79 @@ class PersonaGenerator:
 
     def _call_openai_function(self, api_input: List[Dict[str, str]]) -> Dict[str, Any]:
         """
-        Call OpenAI Responses API with function calling and return parsed persona dict.
+        Call OpenAI Responses API with function calling and return parsed persona dict with metadata.
         """
-        # Responses API requires flattened tool structure
-        resp = self._client.responses.create(
-            model=self.model,
-            input=api_input,
-            tools=[{
-                "type": "function",
-                "name": self._function_def["name"],
-                "description": self._function_def["description"],
-                "parameters": self._function_def["parameters"]
-            }],
-            tool_choice={"type": "function", "name": self._function_def["name"]},
-
-        )
-
-        print(f"🔍 DEBUG - Full response: {resp}")
-
-        # Extract the function call arguments from the OpenAI Responses API response
-        tools = getattr(resp, "tools", None)
-        if not tools or len(tools) == 0:
-            raise ValueError("Model did not perform a function call. Check prompts and model.")
-
-        # Iterate through the list of outputs and extract the arguments
-        arguments_str = None
-        outputs = getattr(resp, "output", None)
-        if outputs and isinstance(outputs, list):
-            for output in outputs:
-                args = getattr(output, "arguments", None)
-                if args:
-                    arguments_str = args
-                    break
-        else:
-            # Fallback for single output object (legacy or unexpected structure)
-            arguments_str = resp.output.arguments
-
-        if not arguments_str:
-            raise ValueError("No function call arguments found in model response.")
-
+        # Record start time
+        start_time = time.time()
+        
         try:
-            return json.loads(arguments_str)
-        except json.JSONDecodeError as e:
-            raise ValueError(f"Function call returned invalid JSON: {arguments_str}") from e
+            # Responses API requires flattened tool structure
+            resp = self._client.responses.create(
+                model=self.model,
+                input=api_input,
+                tools=[{
+                    "type": "function",
+                    "name": self._function_def["name"],
+                    "description": self._function_def["description"],
+                    "parameters": self._function_def["parameters"]
+                }],
+                tool_choice={"type": "function", "name": self._function_def["name"]},
+            )
+
+            # Calculate response time
+            response_time = time.time() - start_time
+
+            # Extract the function call arguments from the OpenAI Responses API response
+            tools = getattr(resp, "tools", None)
+            if not tools or len(tools) == 0:
+                raise ValueError("Model did not perform a function call. Check prompts and model.")
+
+            # Iterate through the list of outputs and extract the arguments
+            arguments_str = None
+            outputs = getattr(resp, "output", None)
+            if outputs and isinstance(outputs, list):
+                for output in outputs:
+                    args = getattr(output, "arguments", None)
+                    if args:
+                        arguments_str = args
+                        break
+            else:
+                # Fallback for single output object (legacy or unexpected structure)
+                arguments_str = resp.output.arguments
+
+            if not arguments_str:
+                raise ValueError("No function call arguments found in model response.")
+
+            try:
+                persona_data = json.loads(arguments_str)
+            except json.JSONDecodeError as e:
+                raise ValueError(f"Function call returned invalid JSON: {arguments_str}") from e
+
+            # Extract token usage
+            usage = resp.usage
+            token_info = {
+                "input_tokens": usage.input_tokens if usage else None,
+                "output_tokens": usage.output_tokens if usage else None,
+                "total_tokens": usage.total_tokens if usage else None
+            }
+
+            # Build metadata
+            metadata = {
+                "response_time": round(response_time, 3),
+                "model": self.model,
+                "tokens": token_info,
+                "operation_type": "persona_generation"
+            }
+
+            return {
+                "persona": persona_data,
+                "metadata": metadata
+            }
+
+        except Exception as e:
+            # Calculate response time even if there's an error
+            response_time = time.time() - start_time
+            raise Exception(f"OpenAI API call failed after {round(response_time, 3)}s: {str(e)}")
 
     # --------- Public API ---------
     def generate(
@@ -211,13 +242,21 @@ class PersonaGenerator:
             recommend_llm_prompt_injection: Optional extra instruction to include.
             extra_guidelines: Optional extra system instructions.
             clean_with_validator: If True, run PersonaValidator.clean_persona() before returning.
+            
+        Returns:
+            Dictionary containing:
+                - persona: The generated persona data
+                - metadata: Information about the generation process including timing and token usage
         """
         api_input = self._build_api_input(
             user_input=user_input,
             recommend_llm_prompt_injection=recommend_llm_prompt_injection,
             extra_guidelines=extra_guidelines,
         )
-        persona = self._call_openai_function(api_input)
+        
+        result = self._call_openai_function(api_input)
+        persona = result["persona"]
+        metadata = result["metadata"]
 
         # Validate via PersonaValidator (raises ValueError if invalid)
         self._validator.validate_persona(persona)
@@ -225,5 +264,43 @@ class PersonaGenerator:
         # Optional cleaning step using the same validator
         if clean_with_validator:
             persona = self._validator.clean_persona(persona)
+            # Update metadata to indicate cleaning was performed
+            metadata["cleaned_with_validator"] = True
+        else:
+            metadata["cleaned_with_validator"] = False
 
-        return persona
+        return {
+            "persona": persona,
+            "metadata": metadata
+        }
+
+
+
+    def generate_with_metadata(
+        self,
+        user_input: str,    
+        recommend_llm_prompt_injection: Optional[str] = None,
+        extra_guidelines: Optional[List[str]] = None,
+        clean_with_validator: bool = False,
+    ) -> Dict[str, Any]:
+        """
+        Generate a persona dict and return both persona and metadata.
+        This method provides explicit access to the full result with metadata.
+        
+        Args:
+            user_input: Free-form user description.
+            recommend_llm_prompt_injection: Optional extra instruction to include.
+            extra_guidelines: Optional extra system instructions.
+            clean_with_validator: If True, run PersonaValidator.clean_persona() before returning.
+            
+        Returns:
+            Dictionary containing:
+                - persona: The generated persona data
+                - metadata: Information about the generation process including timing and token usage
+        """
+        return self.generate(
+            user_input=user_input,
+            recommend_llm_prompt_injection=recommend_llm_prompt_injection,
+            extra_guidelines=extra_guidelines,
+            clean_with_validator=clean_with_validator,
+        )

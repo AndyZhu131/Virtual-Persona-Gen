@@ -10,7 +10,7 @@ import json
 import requests
 from pathlib import Path
 
-INPUT_CODE_START = 17
+INPUT_CODE_START = 1
 INPUT_CODE_END = 24
 
 def call_api(input_file, output_file):
