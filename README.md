@@ -69,6 +69,11 @@ python run_mvp.py
 - Operation type logging
 - Performance insights
 
+### ✅ Performance Control
+- Configurable max output tokens
+- Adjustable reasoning effort levels
+- Cost optimization options
+
 ---
 
 ## 📖 Example Usage
@@ -86,9 +91,19 @@ print("Metadata:", result["metadata"])
 
 ### API Request
 ```bash
+# Basic request
 curl -X POST "http://localhost:8000/persona/generate" \
   -H "Content-Type: application/json" \
   -d '{"description": "Enthusiastic startup founder"}'
+
+# With optional parameters
+curl -X POST "http://localhost:8000/persona/generate" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "description": "Enthusiastic startup founder",
+    "max_output_tokens": 500,
+    "reasoning_effort": "medium"
+  }'
 ```
 
 ---

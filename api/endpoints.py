@@ -26,10 +26,16 @@ async def create_persona(request: Dict[str, Any]):
         # Create PersonaGenerator instance using environment variables
         generator = PersonaGenerator.from_env()
         
+        # Get optional parameters
+        max_output_tokens = request.get("max_output_tokens")
+        reasoning_effort = request.get("reasoning_effort", "low")
+        
         # Generate persona
         result = generator.generate(
             user_input=description,
-            clean_with_validator=False  # Clean the output using PersonaValidator
+            clean_with_validator=False,  # Clean the output using PersonaValidator
+            max_output_tokens=max_output_tokens,
+            reasoning_effort=reasoning_effort
         )
         
         return result
@@ -51,7 +57,9 @@ async def start_conversation(request: Dict[str, Any]):
         persona_generator = PersonaGenerator.from_env()
         persona_result = persona_generator.generate(
             user_input=description,
-            clean_with_validator=False
+            clean_with_validator=False,
+            max_output_tokens=max_output_tokens,
+            reasoning_effort="low"  # Use default for persona generation
         )
         
         # Generate opening line

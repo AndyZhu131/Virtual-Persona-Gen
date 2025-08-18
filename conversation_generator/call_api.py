@@ -10,8 +10,8 @@ import json
 import requests
 from pathlib import Path
 
-INPUT_CODE_START = 1
-INPUT_CODE_END = 24
+INPUT_CODE_START = 7
+INPUT_CODE_END = 10
 
 def call_api(input_file, output_file):
     url = "http://localhost:8000/conversation/start"

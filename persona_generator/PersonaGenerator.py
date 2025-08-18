@@ -25,6 +25,9 @@ class PersonaGenerator:
       4) calls OpenAI with function calling
       5) validates and returns the persona dict (via PersonaValidator)
     """
+    
+    # Global constant for max output tokens
+    MAX_OUTPUT_TOKENS = 1000
 
     def __init__(
         self,
@@ -149,9 +152,17 @@ class PersonaGenerator:
             {"role": "user", "content": "\n".join(user_lines)},
         ]
 
-    def _call_openai_function(self, api_input: List[Dict[str, str]]) -> Dict[str, Any]:
+    def _call_openai_function(self, 
+                             api_input: List[Dict[str, str]], 
+                             max_output_tokens: int = MAX_OUTPUT_TOKENS,
+                             reasoning_effort: Optional[str] = "low") -> Dict[str, Any]:
         """
         Call OpenAI Responses API with function calling and return parsed persona dict with metadata.
+        
+        Args:
+            api_input: List of message dictionaries for the API call
+            max_output_tokens: Maximum tokens for the response
+            reasoning_effort: Reasoning effort level for the model (default: "low")
         """
         # Record start time
         start_time = time.time()
@@ -161,6 +172,8 @@ class PersonaGenerator:
             resp = self._client.responses.create(
                 model=self.model,
                 input=api_input,
+                max_output_tokens=max_output_tokens,
+                reasoning={"effort": reasoning_effort},
                 tools=[{
                     "type": "function",
                     "name": self._function_def["name"],
@@ -232,6 +245,8 @@ class PersonaGenerator:
         recommend_llm_prompt_injection: Optional[str] = None,
         extra_guidelines: Optional[List[str]] = None,
         clean_with_validator: bool = False,
+        max_output_tokens: int = MAX_OUTPUT_TOKENS,
+        reasoning_effort: Optional[str] = "low",
     ) -> Dict[str, Any]:
         """
         Generate a persona dict from user_input, validate it with PersonaValidator,
@@ -254,7 +269,11 @@ class PersonaGenerator:
             extra_guidelines=extra_guidelines,
         )
         
-        result = self._call_openai_function(api_input)
+        result = self._call_openai_function(
+            api_input=api_input,
+            max_output_tokens=max_output_tokens,
+            reasoning_effort=reasoning_effort
+        )
         persona = result["persona"]
         metadata = result["metadata"]
 
@@ -282,6 +301,8 @@ class PersonaGenerator:
         recommend_llm_prompt_injection: Optional[str] = None,
         extra_guidelines: Optional[List[str]] = None,
         clean_with_validator: bool = False,
+        max_output_tokens: int = MAX_OUTPUT_TOKENS,
+        reasoning_effort: Optional[str] = "low",
     ) -> Dict[str, Any]:
         """
         Generate a persona dict and return both persona and metadata.
@@ -303,4 +324,6 @@ class PersonaGenerator:
             recommend_llm_prompt_injection=recommend_llm_prompt_injection,
             extra_guidelines=extra_guidelines,
             clean_with_validator=clean_with_validator,
+            max_output_tokens=max_output_tokens,
+            reasoning_effort=reasoning_effort,
         )
