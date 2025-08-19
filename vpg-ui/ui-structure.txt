@@ -1,0 +1,47 @@
+vpg/                         # Project root
+│
+├── package.json             # Project dependencies and npm/pnpm scripts
+├── tsconfig.json            # TypeScript compiler configuration
+├── next.config.mjs          # Next.js framework configuration
+├── postcss.config.mjs       # PostCSS config (used by Tailwind)
+├── tailwind.config.ts       # TailwindCSS configuration (scan paths, theme, plugins)
+├── .eslintrc.cjs            # ESLint configuration (code linting rules)
+├── .prettierrc              # Prettier configuration (code formatting)
+├── .env.local.example       # Example env file (copy to .env.local and fill with keys)
+├── README.md                # Project documentation / setup instructions
+│
+├── app/                     # Next.js App Router directory (all routes/pages)
+│   ├── layout.tsx           # Global layout (navbar, providers, shared UI)
+│   ├── globals.css          # Global CSS styles (imports Tailwind)
+│   ├── loading.tsx          # Default loading UI (shown during suspense)
+│   ├── error.tsx            # Default error UI (shown if page fails)
+│   │
+│   ├── login/               # Login route
+│   │   └── page.tsx         # Login page (Supabase Magic Link form)
+│   │
+│   ├── app/                 # Main application route
+│   │   └── page.tsx         # Persona list + chat panel
+│   │
+│   ├── personas/            # Persona CRUD routes
+│   │   └── [id]/edit/
+│   │       └── page.tsx     # Edit persona page (JSON editor + save)
+│   │
+│   └── api/                 # API endpoints (serverless functions)
+│       └── chat/
+│           └── route.ts     # Chat API (currently returns echo reply)
+│
+├── components/              # Reusable UI components
+│   ├── navbar.tsx           # Top navigation bar (title + login/logout)
+│   ├── persona-list.tsx     # Sidebar list of personas
+│   ├── chat-panel.tsx       # Chat interface (message list + input box)
+│   ├── json-editor.tsx      # JSON schema editor (textarea with validation)
+│   └── toast-provider.tsx   # Toast notification system (global messages)
+│
+├── lib/                     # Utility and helper modules
+│   ├── supabaseClient.ts    # Supabase client setup (browser/server)
+│   ├── queryClient.ts       # React Query client provider
+│   ├── types.ts             # Shared TypeScript types (Persona, Message)
+│   └── validators.ts        # JSON schema validation helpers
+│
+└── public/                  # Static assets
+    └── favicon.ico          # Browser tab icon
