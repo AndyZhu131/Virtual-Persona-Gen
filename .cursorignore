@@ -29,7 +29,6 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
 lib64/
 parts/
 sdist/
@@ -73,7 +72,6 @@ logs/
 
 # Large data files
 *.csv
-*.json
 *.xml
 data/
 datasets/
