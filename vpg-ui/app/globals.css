@@ -2,5 +2,31 @@
 @tailwind components;
 @tailwind utilities;
 
-:root { color-scheme: light dark; }
-body { @apply text-sm md:text-base; }
+:root {
+  color-scheme: dark;
+  --background: 17 24 39; /* gray-900 */
+  --foreground: 243 244 246; /* gray-100 */
+  --border: 55 65 81; /* gray-700 */
+  --ring: 147 51 234; /* purple-600 */
+}
+
+* {
+  border-color: rgb(var(--border));
+}
+
+body {
+  @apply text-sm md:text-base;
+  background-color: rgb(var(--background));
+  color: rgb(var(--foreground));
+}
+
+/* Enhanced focus-visible ring for better accessibility */
+*:focus-visible {
+  outline: 2px solid rgb(var(--ring));
+  outline-offset: 2px;
+}
+
+/* Smooth scrolling for better UX */
+html {
+  scroll-behavior: smooth;
+}

@@ -1,6 +1,5 @@
 import "./globals.css";
 import type { Metadata } from "next";
-import Navbar from "@/components/navbar";
 import { ReactQueryProvider } from "@/lib/queryClient";
 import { ToastProvider } from "@/components/toast-provider";
 
@@ -15,8 +14,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="min-h-screen antialiased">
         <ReactQueryProvider>
           <ToastProvider>
-            <Navbar />
-            <main className="max-w-6xl mx-auto px-4 py-6">{children}</main>
+            <main>{children}</main>
           </ToastProvider>
         </ReactQueryProvider>
       </body>

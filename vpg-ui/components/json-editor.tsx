@@ -7,11 +7,12 @@ export default function JsonEditor({
   }) {
     return (
       <textarea
-        className="w-full border rounded p-2 font-mono"
-        rows={16}
+        className="w-full bg-gray-900 text-gray-100 font-mono text-sm leading-relaxed p-4 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all resize-none scrollbar-thin scrollbar-track-gray-800 scrollbar-thumb-gray-600"
+        rows={20}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        placeholder='{"tone":"friendly"}'
+        placeholder='{\n  "personality": "helpful",\n  "tone": "friendly",\n  "style": "conversational"\n}'
+        spellCheck={false}
       />
     );
   }
