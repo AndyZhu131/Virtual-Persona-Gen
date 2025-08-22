@@ -25,7 +25,6 @@
         "minLength": 1,
         "description": "How the persona behaves in conversations, e.g., 'asks clarifying questions before answering'."
       },
-  
       "name": { 
         "type": "string",
         "description": "Optional display name for the persona."

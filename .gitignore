@@ -147,7 +147,11 @@ pids
 .nuxt
 
 # Storybook build outputs
+/.storybook/
+.storybook/
 .storybook-out
+/stories/
+stories/
 
 # SWC compiler cache
 .swc/
@@ -164,3 +168,7 @@ pids
 .env.development
 .env.production
 .env.test
+
+
+*storybook.log
+storybook-static

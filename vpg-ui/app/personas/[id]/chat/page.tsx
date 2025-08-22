@@ -8,7 +8,8 @@ import PersonaList from "@/components/persona-list";
 import type { Persona } from "@/lib/types";
 import { demoPersonas } from "@/lib/demos";
 
-export default function PersonaChatPage({ params }: { params: { id: string } }) {
+export default function PersonaChatPage({ params }: { params: Promise<{ id: string }> }) {
+  const [resolvedParams, setResolvedParams] = useState<{ id: string } | null>(null);
   const supabase = createClientComponentClient();
   const router = useRouter();
   const [persona, setPersona] = useState<Persona | null>(null);
@@ -16,6 +17,10 @@ export default function PersonaChatPage({ params }: { params: { id: string } }) 
   const [myPersonas, setMyPersonas] = useState<Persona[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [userId, setUserId] = useState<string | null>(null);
+
+  useEffect(() => {
+    params.then(setResolvedParams);
+  }, [params]);
 
   // Get user information
   useEffect(() => {
@@ -41,11 +46,13 @@ export default function PersonaChatPage({ params }: { params: { id: string } }) 
 
   // Fetch the current persona
   useEffect(() => {
+    if (!resolvedParams?.id) return;
+    
     (async () => {
       setIsLoading(true);
       
       // Check if it's a demo persona first
-      const demoPersona = demoPersonas.find(p => p.id === params.id);
+      const demoPersona = demoPersonas.find(p => p.id === resolvedParams.id);
       if (demoPersona) {
         setPersona(demoPersona);
         setIsLoading(false);
@@ -56,7 +63,7 @@ export default function PersonaChatPage({ params }: { params: { id: string } }) 
       const { data, error } = await supabase
         .from("personas")
         .select("*")
-        .eq("id", params.id)
+        .eq("id", resolvedParams.id)
         .single();
       
       if (error) {
@@ -70,7 +77,20 @@ export default function PersonaChatPage({ params }: { params: { id: string } }) 
       }
       setIsLoading(false);
     })();
-  }, [params.id, supabase, router]);
+  }, [resolvedParams?.id, supabase, router]);
+
+  if (!resolvedParams) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-900">
+        <div className="text-center">
+          <div className="w-8 h-8 border-4 border-purple-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-400">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  const { id } = resolvedParams;
 
   const handleBack = () => {
     router.push("/");

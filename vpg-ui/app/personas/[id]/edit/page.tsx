@@ -26,7 +26,8 @@ function useToast() {
   return { toasts, showToast, removeToast };
 }
 
-export default function PersonaEditPage({ params }: { params: { id: string } }) {
+export default function PersonaEditPage({ params }: { params: Promise<{ id: string }> }) {
+  const [resolvedParams, setResolvedParams] = useState<{ id: string } | null>(null);
   const supabase = createClientComponentClient();
   const router = useRouter();
   const { toasts, showToast, removeToast } = useToast();
@@ -41,12 +42,19 @@ export default function PersonaEditPage({ params }: { params: { id: string } }) 
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    params.then(setResolvedParams);
+  }, [params]);
+
+  // Fetch persona data
+  useEffect(() => {
+    if (!resolvedParams?.id) return;
+    
     (async () => {
       setIsLoading(true);
       const { data, error } = await supabase
         .from("personas")
         .select("*")
-        .eq("id", params.id)
+        .eq("id", resolvedParams.id)
         .single();
       
       if (error) {
@@ -63,7 +71,7 @@ export default function PersonaEditPage({ params }: { params: { id: string } }) 
       }
       setIsLoading(false);
     })();
-  }, [params.id, supabase, router]);
+  }, [resolvedParams?.id, supabase, router]);
 
   // Validate fields in real-time
   useEffect(() => {
@@ -92,6 +100,19 @@ export default function PersonaEditPage({ params }: { params: { id: string } }) 
       setSchemaError(null);
     }
   }, [schema]);
+
+  if (!resolvedParams) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-900">
+        <div className="text-center">
+          <div className="w-8 h-8 border-4 border-purple-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-400">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  const { id } = resolvedParams;
 
   const handleBack = () => {
     router.push("/");

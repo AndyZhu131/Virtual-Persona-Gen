@@ -4,6 +4,7 @@ import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import ThemeToggle from "./theme-toggle";
 
 export default function Navbar() {
   const supabase = createClientComponentClient();
@@ -81,8 +82,9 @@ export default function Navbar() {
           </div>
         )}
 
-        {/* Right - Auth */}
+        {/* Right - Auth & Theme Toggle */}
         <nav className="flex items-center gap-3">
+          <ThemeToggle />
           {email ? (
             <div className="flex items-center gap-3">
               <span className="text-gray-300 text-sm hidden sm:block">
