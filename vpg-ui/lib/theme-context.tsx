@@ -1,7 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { Theme, getThemeColors } from './theme';
+import { Theme, getThemeColors, getThemeCSSVariables } from './theme';
 
 interface ThemeContextType {
   theme: Theme;
@@ -18,7 +18,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     // Load theme from localStorage on mount
     const savedTheme = localStorage.getItem('vpg-theme') as Theme;
-    if (savedTheme && (savedTheme === 'dark' || savedTheme === 'bright')) {
+    if (savedTheme && (savedTheme === 'dark' || savedTheme === 'light')) {
       setThemeState(savedTheme);
     }
   }, []);
@@ -27,8 +27,14 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     // Save theme to localStorage whenever it changes
     localStorage.setItem('vpg-theme', theme);
     
-    // Apply theme to document for potential CSS custom properties
+    // Apply theme to document for CSS custom properties
     document.documentElement.setAttribute('data-theme', theme);
+    
+    // Apply CSS custom properties globally
+    const cssVariables = getThemeCSSVariables(theme);
+    Object.entries(cssVariables).forEach(([property, value]) => {
+      document.documentElement.style.setProperty(property, value);
+    });
   }, [theme]);
 
   const setTheme = (newTheme: Theme) => {
@@ -36,7 +42,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   };
 
   const toggleTheme = () => {
-    setThemeState(prev => prev === 'dark' ? 'bright' : 'dark');
+    setThemeState(prev => prev === 'dark' ? 'light' : 'dark');
   };
 
   const colors = getThemeColors(theme);

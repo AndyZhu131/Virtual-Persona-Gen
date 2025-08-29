@@ -3,6 +3,7 @@ export type Persona = {
     owner_id?: string;
     name: string;
     description?: string | null;
+    avatarUrl?: string | null;
     schema?: Record<string, unknown> | null;
     created_at?: string;
     updated_at?: string;

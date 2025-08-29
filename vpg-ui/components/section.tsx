@@ -1,24 +1,57 @@
+"use client";
+
+import { useRouter } from 'next/navigation';
+import type { Persona } from '@/lib/types';
+import PersonaCard from './persona-card';
+
 interface SectionProps {
   title: string;
-  children: React.ReactNode;
-  className?: string;
+  personas: Persona[];
+  onSelect: (persona: Persona) => void;
+  showViewAll?: boolean;
+  viewAllHref?: string;
 }
 
-export default function Section({ title, children, className = "" }: SectionProps) {
+export default function Section({ title, personas, onSelect, showViewAll = true, viewAllHref }: SectionProps) {
+  const router = useRouter();
+
+  const handleViewAll = () => {
+    if (viewAllHref) {
+      router.push(viewAllHref);
+    }
+  };
+
+  if (personas.length === 0) {
+    return null;
+  }
+
   return (
-    <section className={`space-y-4 ${className}`}>
+    <div className="mb-8">
       {/* Section Header */}
-      <div className="flex items-center justify-between">
-        <h2 className="text-white text-xl font-semibold">{title}</h2>
-        <button className="text-gray-400 hover:text-white text-sm font-medium transition-colors duration-200">
-          View all
-        </button>
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-2xl font-bold text-[var(--color-textPrimary)]">
+          {title}
+        </h2>
+        {showViewAll && (
+          <button
+            onClick={handleViewAll}
+            className="text-[var(--color-textSecondary)] hover:text-[var(--color-textPrimary)] transition-colors font-medium"
+          >
+            View all
+          </button>
+        )}
       </div>
 
-      {/* Responsive Grid Layout - 2 to 6 columns */}
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-        {children}
+      {/* Personas Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        {personas.map((persona) => (
+          <PersonaCard
+            key={persona.id}
+            persona={persona}
+            onSelect={onSelect}
+          />
+        ))}
       </div>
-    </section>
+    </div>
   );
 }

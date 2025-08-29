@@ -2,24 +2,25 @@
 
 import { useEffect, useState } from "react";
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import PersonaList from "@/components/persona-list";
 import PersonaCard from "@/components/persona-card";
-import Section from "@/components/section";
+
 import EmptyState from "@/components/empty-state";
+import Navbar from "@/components/navbar";
 import { demoPersonas } from "@/lib/demos";
+
 import type { Persona, NewPersona } from "@/lib/types";
-import { useTheme } from "@/lib/theme-context";
 
 export default function AppPage() {
-  const { colors } = useTheme();
   const supabase = createClientComponentClient();
   const router = useRouter();
-  const searchParams = useSearchParams();
   const [userId, setUserId] = useState<string | null>(null);
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [myPersonas, setMyPersonas] = useState<Persona[]>([]);
-  const [query, setQuery] = useState("");
+  const [loginEmail, setLoginEmail] = useState("");
+  const [loginSent, setLoginSent] = useState(false);
+  const [loginLoading, setLoginLoading] = useState(false);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
@@ -43,16 +44,24 @@ export default function AppPage() {
       });
   }, [supabase, userId]);
 
-  // Initialize search query from URL params
-  useEffect(() => {
-    const searchQuery = searchParams.get("q") || "";
-    setQuery(searchQuery);
-  }, [searchParams]);
-
-  // Client-side search filtering (by name only)
-  const filteredPersonas = myPersonas.filter(p => 
-    p.name.toLowerCase().includes(query.toLowerCase())
-  );
+  // Handle magic link login
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoginLoading(true);
+    
+    const { error } = await supabase.auth.signInWithOtp({
+      email: loginEmail,
+      options: { emailRedirectTo: typeof window !== "undefined" ? `${location.origin}/auth/callback` : undefined }
+    });
+    
+    if (error) {
+      alert(error.message);
+    } else {
+      setLoginSent(true);
+    }
+    
+    setLoginLoading(false);
+  };
 
   // Callback functions
   const createPersona = async (): Promise<void> => {
@@ -123,219 +132,166 @@ export default function AppPage() {
     }
   };
 
-  if (!userId) return <div className={`p-6 ${colors.text.primary}`}>Please login.</div>;
+  // Show login form for unauthenticated users
+  if (!userId) {
+    return (
+      <div className="bg-[var(--color-background)] min-h-screen flex items-center justify-center">
+        <div className="max-w-md w-full mx-auto p-8">
+          <div className="text-center mb-8">
+            <h1 className="text-4xl font-bold text-[var(--color-textPrimary)] mb-2">
+              Welcome to VPG
+            </h1>
+            <p className="text-[var(--color-textSecondary)] text-lg">
+              Create and manage your virtual personas with AI-powered conversations
+            </p>
+          </div>
+
+          <div className="bg-[var(--color-surface)] rounded-2xl p-6 border border-[var(--color-border)]">
+            <h2 className="text-2xl font-semibold text-[var(--color-textPrimary)] mb-4 text-center">
+              Get Started
+            </h2>
+            
+            {!loginSent ? (
+              <form onSubmit={handleLogin} className="space-y-4">
+                <div>
+                  <label htmlFor="email" className="block text-sm font-medium text-[var(--color-textPrimary)] mb-2">
+                    Email Address
+                  </label>
+                  <input
+                    id="email"
+                    type="email"
+                    required
+                    className="w-full px-4 py-3 border border-[var(--color-border)] rounded-lg bg-[var(--color-background)] text-[var(--color-textPrimary)] placeholder-[var(--color-textSecondary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-button)] focus:border-transparent"
+                    placeholder="you@example.com"
+                    value={loginEmail}
+                    onChange={(e) => setLoginEmail(e.target.value)}
+                  />
+                </div>
+                
+                <button
+                  type="submit"
+                  disabled={loginLoading}
+                  className="w-full px-4 py-3 bg-[var(--color-button)] text-white rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                >
+                  {loginLoading ? "Sending..." : "Send Magic Link"}
+                </button>
+              </form>
+            ) : (
+              <div className="text-center">
+                <div className="text-green-500 text-6xl mb-4">✓</div>
+                <h3 className="text-lg font-semibold text-[var(--color-textPrimary)] mb-2">
+                  Check Your Email
+                </h3>
+                                  <p className="text-[var(--color-textSecondary)] mb-4">
+                    We&apos;ve sent a magic link to <strong>{loginEmail}</strong>
+                  </p>
+                <p className="text-sm text-[var(--color-textSecondary)]">
+                  Click the link in your email to sign in and start creating personas.
+                </p>
+                <button
+                  onClick={() => {
+                    setLoginSent(false);
+                    setLoginEmail("");
+                  }}
+                  className="mt-4 text-[var(--color-button)] hover:underline"
+                >
+                  Use a different email
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Demo section for unauthenticated users */}
+          <div className="mt-8 text-center">
+            <p className="text-[var(--color-textSecondary)] mb-4">
+              Want to see what VPG can do? Check out our demo personas below.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className={`${colors.bg.primary} min-h-screen`}>
+    <div className="bg-[var(--color-background)] min-h-screen">
       {/* Left Fixed Sidebar */}
       <PersonaList 
         items={myPersonas} 
         onSelect={(persona) => router.push(`/personas/${persona.id}/chat`)}
         onCreate={createPersona}
-        onSearch={(q) => setQuery(q)}
       />
-
+      
       {/* Main Content Area */}
       <div className="ml-80 flex flex-col min-h-screen">
+        {/* Top Navigation Bar */}
+        <Navbar />
+        
         {/* Main Content */}
         <div className="flex-1 overflow-y-auto">
-          <div className="max-w-6xl mx-auto p-8">
-            {/* Top Navigation Bar Integrated */}
-            <div className={`flex items-center justify-between mb-8 pb-6 border-b ${colors.border.primary}`}>
-              <div className={`text-3xl font-bold ${colors.text.primary}`}>VPG</div>
-              <div className="flex-1 max-w-md mx-8">
-                <div className="relative">
-                  <input
-                    type="text"
-                    placeholder="Search personas..."
-                    value={query}
-                    onChange={(e) => setQuery(e.target.value)}
-                    className={`w-full px-4 py-2 ${colors.bg.secondary} ${colors.text.primary} rounded-lg border ${colors.border.primary} focus:outline-none focus:border-blue-500`}
-                  />
-                  <svg className={`absolute left-3 top-2.5 h-4 w-4 ${colors.text.muted}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                  </svg>
-                </div>
-              </div>
-              <div className="flex items-center gap-4">
-                <span className={colors.text.primary}>{userEmail || "Guest"}</span>
-                <button className={`px-4 py-2 ${colors.bg.secondary} ${colors.text.primary} rounded-lg hover:${colors.bg.tertiary} transition-colors`}>
-                  Logout
-                </button>
-              </div>
-            </div>
-
-            {/* Welcome Message */}
+          <div className="max-w-7xl mx-auto p-8">
+            {/* Welcome Section */}
             <div className="mb-8">
-              <h1 className={`text-3xl font-bold ${colors.text.primary} mb-2`}>
-                Welcome back, {userId ? "User" : "Guest"}!
+              <h1 className="text-4xl font-bold text-[var(--color-textPrimary)] mb-2">
+                Welcome to VPG
               </h1>
-              <p className={`${colors.text.muted} text-lg`}>
-                Create, discover, and chat with AI personas
+              <p className="text-[var(--color-textSecondary)] text-lg">
+                Create and manage your virtual personas with AI-powered conversations
               </p>
-              
-              {/* Search Results Info */}
-              {query && (
-                <div className={`${colors.text.muted} text-sm mt-2`}>
-                  {filteredPersonas.length} result{filteredPersonas.length !== 1 ? 's' : ''} for &ldquo;{query}&rdquo;
-                </div>
-              )}
-
-              {/* Action Buttons - Only show when there are personas */}
-              {myPersonas.length > 0 && (
-                <div className="mt-4 flex gap-4">
-                  <button 
-                    onClick={createPersona}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                  >
-                    Create New Persona
-                  </button>
-                  <button 
-                    onClick={() => createFromTemplate({
-                      name: "Template Character",
-                      description: "A character created from template",
-                      schema: { template: true }
-                    })}
-                    className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-                  >
-                    Use Template
-                  </button>
-                  <button 
-                    onClick={() => saveDemo({
-                      name: "Demo Character",
-                      description: "A character created from demo data",
-                      schema: { demo: true, personality: "friendly" }
-                    })}
-                    className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
-                  >
-                    Save Demo
-                  </button>
-                </div>
-              )}
             </div>
 
-            {/* Content Sections or Empty State */}
-            {myPersonas.length === 0 ? (
-              <div className="space-y-6">
-                <EmptyState 
-                  onCreate={createPersona}
-                  onTryDemo={() => saveDemo({
-                    name: "Demo Character",
-                    description: "A friendly AI assistant ready to help with various tasks",
-                    schema: { demo: true, personality: "helpful", tone: "casual" }
-                  })}
-                />
-                
-                {/* Demos Section for Empty State */}
-                <div className={`border-t ${colors.border.primary} pt-6`}>
-                  <div className="mb-6">
-                    <h2 className={`text-2xl font-bold ${colors.text.primary} mb-2`}>Explore Demo Personas</h2>
-                    <p className={`${colors.text.muted}`}>Chat with these legendary historical figures and fictional characters</p>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    {demoPersonas.map((demo) => (
-                      <div
-                        key={demo.id}
-                        onClick={() => router.push(`/personas/${demo.id}/chat`)}
-                        className={`${colors.bg.card} border ${colors.border.primary} rounded-lg p-4 cursor-pointer transition-all duration-200 hover:${colors.bg.tertiary} hover:border-purple-500 hover:shadow-lg`}
-                      >
-                        <div className="w-10 h-10 bg-purple-600 rounded-lg flex items-center justify-center mb-3">
-                          <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                          </svg>
-                        </div>
-                        <h3 className={`font-semibold ${colors.text.primary} mb-1`}>{demo.name}</h3>
-                        <p className={`${colors.text.muted} text-sm line-clamp-2`}>{demo.description}</p>
-                      </div>
+            {/* Personas Section */}
+            {userId && (
+              <div className="mb-8">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-2xl font-semibold text-[var(--color-textPrimary)]">
+                    Your Personas
+                  </h2>
+                  <button
+                    onClick={createPersona}
+                    className="px-4 py-2 bg-[var(--color-button)] text-white rounded-lg hover:opacity-90 transition-opacity"
+                  >
+                    Create Persona
+                  </button>
+                </div>
+
+                {myPersonas.length === 0 ? (
+                  <EmptyState 
+                    onCreate={createPersona}
+                    onTryDemo={() => saveDemo({
+                      name: "Demo Character",
+                      description: "A friendly AI assistant ready to help with various tasks",
+                      schema: { demo: true, personality: "helpful", tone: "casual" }
+                    })}
+                  />
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    {myPersonas.map((persona) => (
+                      <PersonaCard
+                        key={persona.id}
+                        persona={persona}
+                        onSelect={() => router.push(`/personas/${persona.id}/chat`)}
+                      />
                     ))}
                   </div>
-                </div>
-              </div>
-            ) : (
-              <div className="space-y-8">
-                {/* For You Section */}
-                <Section title="For You">
-                  {filteredPersonas.slice(0, 10).map((persona) => (
-                    <PersonaCard 
-                      key={persona.id} 
-                      persona={persona} 
-                      onSelect={(p) => router.push(`/personas/${p.id}/chat`)} 
-                    />
-                  ))}
-                </Section>
-
-                {/* Scenes Section */}
-                <Section title="Scenes">
-                  {filteredPersonas.slice(0, 8).map((persona) => (
-                    <PersonaCard 
-                      key={persona.id} 
-                      persona={persona} 
-                      onSelect={(p) => router.push(`/personas/${p.id}/chat`)} 
-                    />
-                  ))}
-                </Section>
-
-                {/* Featured Section */}
-                <Section title="Featured">
-                  {filteredPersonas.slice(0, 10).map((persona) => (
-                    <PersonaCard 
-                      key={persona.id} 
-                      persona={persona} 
-                      onSelect={(p) => router.push(`/personas/${p.id}/chat`)} 
-                    />
-                  ))}
-                </Section>
-
-                {/* Popular Section */}
-                <Section title="Popular">
-                  {filteredPersonas.slice(0, 8).map((persona) => (
-                    <PersonaCard 
-                      key={persona.id} 
-                      persona={persona} 
-                      onSelect={(p) => router.push(`/personas/${p.id}/chat`)} 
-                    />
-                  ))}
-                </Section>
-
-                {/* Trending Section */}
-                <Section title="Trending">
-                  {filteredPersonas.slice(0, 6).map((persona) => (
-                    <PersonaCard 
-                      key={persona.id} 
-                      persona={persona} 
-                      onSelect={(p) => router.push(`/personas/${p.id}/chat`)} 
-                    />
-                  ))}
-                </Section>
-
-                {/* Demos Section for Existing Users */}
-                <div className="border-t border-gray-700 pt-8">
-                  <div className="mb-6">
-                    <h2 className="text-2xl font-bold text-white mb-2">Try Famous Personas</h2>
-                    <p className="text-gray-400">Chat with legendary historical figures and fictional characters</p>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    {demoPersonas.map((demo) => (
-                      <div
-                        key={demo.id}
-                        onClick={() => router.push(`/personas/${demo.id}/chat`)}
-                        className={`bg-gray-800 border rounded-lg p-4 cursor-pointer transition-all duration-200 hover:bg-gray-700 hover:border-purple-500 hover:shadow-lg ${
-                          'border-gray-700'
-                        }`}
-                      >
-                        <div className="w-10 h-10 bg-purple-600 rounded-lg flex items-center justify-center mb-3">
-                          <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                          </svg>
-                        </div>
-                        <h3 className="font-semibold text-white mb-1">{demo.name}</h3>
-                        <p className="text-gray-400 text-sm line-clamp-2">{demo.description}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+                )}
               </div>
             )}
+
+            {/* Demo Personas Section */}
+            <div className="mb-8">
+              <h2 className="text-2xl font-semibold text-[var(--color-textPrimary)] mb-4">
+                Explore Demo Personas
+              </h2>
+              <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-2">
+                {demoPersonas.map((persona) => (
+                  <PersonaCard
+                    key={persona.id}
+                    persona={persona}
+                    onSelect={() => router.push(`/personas/${persona.id}/chat`)}
+                  />
+                ))}
+              </div>
+            </div>
           </div>
         </div>
       </div>

@@ -1,114 +1,104 @@
 "use client";
 
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
-import Link from "next/link";
-import { useEffect, useState } from "react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import ThemeToggle from "./theme-toggle";
+import { useState, useEffect } from 'react';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { useRouter } from 'next/navigation';
+import ThemeToggle from './theme-toggle';
 
 export default function Navbar() {
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const supabase = createClientComponentClient();
-  const [email, setEmail] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState("");
-  const pathname = usePathname();
   const router = useRouter();
-  const searchParams = useSearchParams();
-
-  // Check if we're on the home route
-  const isAppRoute = pathname === "/";
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => setEmail(data.user?.email ?? null));
+    const getUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setUserEmail(user?.email || null);
+    };
+    getUser();
   }, [supabase]);
 
-  // Initialize search query from URL params
-  useEffect(() => {
-    if (isAppRoute) {
-      const query = searchParams.get("q") || "";
-      setSearchQuery(query);
-    }
-  }, [searchParams, isAppRoute]);
-
-  // Update URL when search query changes
-  const handleSearchChange = (value: string) => {
-    setSearchQuery(value);
-    
-    if (!isAppRoute) return;
-
-    const params = new URLSearchParams(searchParams);
-    if (value.trim()) {
-      params.set("q", value.trim());
-    } else {
-      params.delete("q");
-    }
-
-    const newUrl = params.toString() ? `${pathname}?${params.toString()}` : pathname;
-    router.replace(newUrl, { scroll: false });
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    router.replace('/login');
   };
 
   return (
-    <header className="border-b border-gray-700 bg-gray-800">
-      <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
-        {/* Left - Brand */}
-        <Link href="/" className="text-white font-bold text-xl hover:text-purple-300 transition-colors">
-          VPG
-        </Link>
+    <header className="border-b border-[var(--color-border)] bg-[var(--color-surface)]">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between items-center h-16">
+          {/* Logo and Search */}
+          <div className="flex items-center space-x-8 flex-1">
+            {/* Logo */}
+            <div className="flex-shrink-0">
+              <h1 className="text-xl font-bold text-[var(--color-textPrimary)]">
+                VPG
+              </h1>
+            </div>
 
-        {/* Center - Search (only on /app route) */}
-        {isAppRoute && (
-          <div className="flex-1 max-w-md mx-8">
-            <div className="relative">
-              <input
-                type="text"
-                placeholder="Search personas..."
-                value={searchQuery}
-                onChange={(e) => handleSearchChange(e.target.value)}
-                className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 pl-10 text-gray-200 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
-              />
-              <svg 
-                className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" 
-                fill="none" 
-                stroke="currentColor" 
-                viewBox="0 0 24 24"
-              >
-                <path 
-                  strokeLinecap="round" 
-                  strokeLinejoin="round" 
-                  strokeWidth={2} 
-                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" 
+            {/* Search Bar */}
+            <div className="hidden md:block flex-1 max-w-lg">
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="Search personas..."
+                  className="w-full bg-[var(--color-input)] border border-[var(--color-inputBorder)] rounded-lg px-4 py-2 pl-10 text-[var(--color-textPrimary)] placeholder-[var(--color-textSecondary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
                 />
-              </svg>
+                <svg
+                  className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-[var(--color-textSecondary)]"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                  />
+                </svg>
+              </div>
             </div>
           </div>
-        )}
 
-        {/* Right - Auth & Theme Toggle */}
-        <nav className="flex items-center gap-3">
-          <ThemeToggle />
-          {email ? (
-            <div className="flex items-center gap-3">
-              <span className="text-gray-300 text-sm hidden sm:block">
-                {email}
-              </span>
-              <button
-                className="bg-gray-700 hover:bg-gray-600 text-gray-200 border border-gray-600 px-3 py-1.5 rounded-lg transition-colors text-sm"
-                onClick={async () => {
-                  await supabase.auth.signOut();
-                  location.href = "/login";
-                }}
-              >
-                Logout
-              </button>
-            </div>
-          ) : (
-            <Link 
-              className="bg-purple-600 hover:bg-purple-700 text-white border border-purple-600 px-3 py-1.5 rounded-lg transition-colors text-sm font-medium" 
-              href="/login"
-            >
-              Login
-            </Link>
-          )}
-        </nav>
+          {/* Right side - Theme Toggle and User */}
+          <div className="flex items-center space-x-4">
+            {/* Theme Toggle */}
+            <ThemeToggle />
+
+            {/* User Menu */}
+            {userEmail && (
+              <div className="relative">
+                <div className="flex items-center space-x-3">
+                  <span className="text-sm text-[var(--color-textSecondary)]">
+                    {userEmail}
+                  </span>
+                  <button
+                    onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                    className="text-[var(--color-textSecondary)] hover:text-[var(--color-textPrimary)] transition-colors"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+                </div>
+
+                {/* Dropdown Menu */}
+                {isDropdownOpen && (
+                  <div className="absolute right-0 mt-2 w-48 bg-[var(--color-card)] border border-[var(--color-border)] rounded-lg shadow-lg py-1 z-50">
+                    <button
+                      onClick={handleLogout}
+                      className="w-full text-left px-4 py-2 text-sm text-[var(--color-textPrimary)] hover:bg-[var(--color-surface)] transition-colors"
+                    >
+                      Sign out
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
       </div>
     </header>
   );

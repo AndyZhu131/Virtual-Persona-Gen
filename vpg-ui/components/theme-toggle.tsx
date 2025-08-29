@@ -9,10 +9,10 @@ export default function ThemeToggle() {
     <button
       onClick={toggleTheme}
       className="p-2 rounded-lg transition-all duration-200 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 focus:ring-offset-gray-800"
-      title={`Switch to ${theme === 'dark' ? 'bright' : 'dark'} theme`}
+      title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`}
     >
       {theme === 'dark' ? (
-        // Sun icon for dark theme (click to switch to bright)
+        // Sun icon for dark theme (click to switch to light)
         <svg 
           className="w-5 h-5 text-yellow-400" 
           fill="none" 
@@ -27,7 +27,7 @@ export default function ThemeToggle() {
           />
         </svg>
       ) : (
-        // Moon icon for bright theme (click to switch to dark)
+        // Moon icon for light theme (click to switch to dark)
         <svg 
           className="w-5 h-5 text-gray-600" 
           fill="none" 

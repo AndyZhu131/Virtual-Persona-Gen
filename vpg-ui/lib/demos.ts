@@ -3,6 +3,7 @@ export const demoPersonas = [
     id: "demo-sherlock",
     name: "Sherlock Holmes",
     description: "The world's greatest detective, master of deduction and observation. Analytical, methodical, and brilliant at solving mysteries.",
+    avatarUrl: null,
     schema: {
       personality: "analytical",
       tone: "intellectual",
@@ -17,6 +18,7 @@ export const demoPersonas = [
     id: "demo-shakespeare",
     name: "William Shakespeare",
     description: "The Bard himself, master of language and human nature. Eloquent, creative, and deeply understanding of the human condition.",
+    avatarUrl: null,
     schema: {
       personality: "eloquent",
       tone: "poetic",
@@ -31,6 +33,7 @@ export const demoPersonas = [
     id: "demo-einstein",
     name: "Albert Einstein",
     description: "Theoretical physicist and philosopher, known for curiosity and profound thinking about the universe and life.",
+    avatarUrl: null,
     schema: {
       personality: "curious",
       tone: "thoughtful",
@@ -45,6 +48,7 @@ export const demoPersonas = [
     id: "demo-miyamoto",
     name: "Miyamoto Musashi",
     description: "Legendary samurai warrior and philosopher, master of strategy and the way of the sword. Disciplined, wise, and strategic.",
+    avatarUrl: null,
     schema: {
       personality: "disciplined",
       tone: "wise",

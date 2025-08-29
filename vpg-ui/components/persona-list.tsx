@@ -1,97 +1,97 @@
-import type { Persona } from "@/lib/types";
-import { useState } from "react";
-import { useTheme } from "@/lib/theme-context";
+"use client";
 
-// Helper component for avatar placeholders
-function AvatarPlaceholder({ name, size = "md" }: { name: string; size?: "sm" | "md" | "lg" }) {
-  const sizeClasses = {
-    sm: "w-8 h-8 text-xs",
-    md: "w-10 h-10 text-sm",
-    lg: "w-12 h-12 text-base"
-  };
-  
-  return (
-    <div className={`${sizeClasses[size]} bg-gradient-to-br from-purple-500 to-blue-600 rounded-full flex items-center justify-center text-white font-semibold`}>
-      {name.charAt(0).toUpperCase()}
-    </div>
-  );
+import { useState, useEffect } from 'react';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { useRouter } from 'next/navigation';
+import type { Persona } from '@/lib/types';
+
+interface PersonaListProps {
+  items: Persona[];
+  onSelect: (persona: Persona) => void;
+  onCreate: () => void;
+  onSearch?: (query: string) => void;
 }
 
-// Helper component for navigation items
-function NavItem({ 
-  icon, 
-  label, 
-  isActive = false, 
-  onClick 
-}: { 
-  icon: React.ReactNode; 
-  label: string; 
-  isActive?: boolean; 
-  onClick?: () => void;
-}) {
-  const { colors } = useTheme();
+interface NavItemProps {
+  href: string;
+  children: React.ReactNode;
+  isActive?: boolean;
+  icon: React.ReactNode;
+}
+
+function NavItem({ href, children, isActive = false, icon }: NavItemProps) {
+  const router = useRouter();
   
   return (
     <button
-      onClick={onClick}
-      className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
-        isActive 
-          ? `${colors.bg.secondary} ${colors.text.primary}` 
-          : `${colors.text.muted} hover:${colors.bg.secondary} hover:${colors.text.primary}`
+      onClick={() => router.push(href)}
+      className={`w-full text-left p-3 rounded-lg transition-colors flex items-center gap-3 ${
+        isActive
+          ? 'bg-[var(--color-sidebarHighlight)] text-[var(--color-textPrimary)]'
+          : 'text-[var(--color-textSecondary)] hover:bg-[var(--color-sidebarHighlight)] hover:text-[var(--color-textPrimary)]'
       }`}
     >
-      <div className="w-5 h-5 flex items-center justify-center">
-        {icon}
-      </div>
-      <span className="font-medium">{label}</span>
+      <span className="text-[var(--color-textSecondary)]">{icon}</span>
+      <span className="text-sm">{children}</span>
     </button>
   );
 }
 
-interface PersonaListProps {
-  items: Persona[];
-  onSelect: (p: Persona) => void;
-  onCreate?: () => void;
-  onSearch?: (query: string) => void;
-}
+export default function PersonaList({ items, onSelect, onCreate, onSearch }: PersonaListProps) {
+  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [selectedPersona, setSelectedPersona] = useState<Persona | null>(null);
+  const supabase = createClientComponentClient();
 
-export default function PersonaList({
-  items,
-  onSelect,
-  onCreate,
-  onSearch
-}: PersonaListProps) {
-  const { colors } = useTheme();
-  const [searchQuery, setSearchQuery] = useState("");
-  const [userEmail] = useState("guest@example.com"); // This would come from your auth context
+  useEffect(() => {
+    const getUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setUserEmail(user?.email || null);
+    };
+    getUser();
+  }, [supabase]);
 
-  // Handle search input changes
-  const handleSearchChange = (value: string) => {
-    setSearchQuery(value);
-    onSearch?.(value);
+  const handleSearch = (query: string) => {
+    setSearchQuery(query);
+    onSearch?.(query);
   };
 
-  // Filter personas based on search
-  const filteredItems = items.filter(p => 
-    p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    p.description?.toLowerCase().includes(searchQuery.toLowerCase())
+  const handlePersonaSelect = (persona: Persona) => {
+    setSelectedPersona(persona);
+    onSelect(persona);
+  };
+
+  const filteredItems = items.filter(item =>
+    item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (item.description && item.description.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
-  // Static avatar items for "This Month" section
-  const staticAvatars = [
-    { name: "Detective Stefano", description: "Mystery solver" },
-    { name: "Susan B Anthony", description: "Historical figure" },
-    { name: "The Crown Prince", description: "Royal advisor" },
-    { name: "Tech Guru", description: "AI expert" }
-  ];
+  if (isCollapsed) {
+    return (
+      <div className="w-16 bg-[var(--color-sidebar)] border-r border-[var(--color-border)] h-screen flex flex-col fixed left-0 top-0 z-10">
+        <button
+          onClick={() => setIsCollapsed(false)}
+          className="p-4 text-[var(--color-textSecondary)] hover:text-[var(--color-textPrimary)]"
+        >
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
+          </svg>
+        </button>
+      </div>
+    );
+  }
 
   return (
-    <div className={`w-80 ${colors.bg.primary} border-r ${colors.border.primary} h-screen flex flex-col fixed left-0 top-0 z-10`}>
-      {/* Header with Logo and Collapse */}
-      <div className={`p-4 border-b ${colors.border.primary}`}>
+    <div className="w-80 bg-[var(--color-sidebar)] border-r border-[var(--color-border)] h-screen flex flex-col fixed left-0 top-0 z-10">
+      {/* Header */}
+      <div className="p-4 border-b border-[var(--color-border)]">
         <div className="flex items-center justify-between mb-4">
-          <h1 className={`${colors.text.primary} font-bold text-lg`}>vpg.ai</h1>
-          <button className={`${colors.text.muted} hover:${colors.text.primary} transition-colors`}>
+          <h1 className="text-xl font-semibold text-[var(--color-textPrimary)]">vpg</h1>
+          <button
+            onClick={() => setIsCollapsed(true)}
+            className="text-[var(--color-textSecondary)] hover:text-[var(--color-textPrimary)]"
+          >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
             </svg>
@@ -99,121 +99,118 @@ export default function PersonaList({
         </div>
         
         {/* Create Button */}
-        <button 
+        <button
           onClick={onCreate}
-          disabled={!onCreate}
-          className={`w-full font-semibold py-3 px-4 rounded-lg transition-all duration-200 flex items-center justify-center gap-2 shadow-lg ${
-            onCreate 
-              ? "bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white cursor-pointer" 
-              : `${colors.bg.secondary} ${colors.text.muted} cursor-not-allowed`
+          disabled={!userEmail}
+          className={`w-full px-3 py-2 rounded-lg transition-colors flex items-center gap-2 justify-center ${
+            userEmail
+              ? 'bg-[var(--color-sidebarDark)] text-[var(--color-textPrimary)] hover:bg-[var(--color-sidebarHighlight)]'
+              : 'bg-[var(--color-sidebarDark)] text-[var(--color-textSecondary)] cursor-not-allowed'
           }`}
         >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
           </svg>
-          Create
+          <span className="text-sm font-medium">Create</span>
         </button>
       </div>
 
       {/* Navigation */}
-      <div className="p-4 space-y-2">
-        <NavItem 
-          icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-          </svg>}
-          label="Discover"
-          isActive={true}
-        />
-        <NavItem 
-          icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-          </svg>}
-          label="AvatarFX"
-          isActive={false}
-        />
-      </div>
+      <nav className="px-4 py-2 space-y-1">
+        <NavItem href="/" icon={
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+          </svg>
+        }>
+          Home
+        </NavItem>
+        <NavItem href="/personas" icon={
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+          </svg>
+        }>
+          Discover
+        </NavItem>
+      </nav>
 
-      {/* Search Input */}
-      <div className="px-4 mb-4">
+      {/* Search */}
+      <div className="px-4 py-2">
         <div className="relative">
           <input
             type="text"
-            placeholder="Q Search..."
+            placeholder="Search"
             value={searchQuery}
-            onChange={(e) => handleSearchChange(e.target.value)}
-            className={`w-full ${colors.bg.secondary} border ${colors.border.primary} rounded-lg px-4 py-2 pl-10 ${colors.text.primary} ${colors.text.muted} focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all`}
+            onChange={(e) => handleSearch(e.target.value)}
+            className="w-full bg-[var(--color-input)] border border-[var(--color-inputBorder)] rounded-lg px-4 py-2 pl-10 text-[var(--color-textPrimary)] placeholder-[var(--color-textSecondary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-purple)] text-sm"
           />
-          <svg className={`absolute left-3 top-2.5 w-4 h-4 ${colors.text.muted}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          <svg
+            className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-[var(--color-textSecondary)]"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+            />
           </svg>
         </div>
       </div>
 
-      {/* This Month Section */}
-      <div className="px-4 mb-4">
-        <h3 className={`${colors.text.muted} font-semibold text-sm mb-3`}>This Month</h3>
-        <div className="space-y-3">
-          {staticAvatars.map((avatar, index) => (
-            <div key={index} className={`flex items-center gap-3 p-2 rounded-lg hover:${colors.bg.secondary} transition-colors cursor-pointer`}>
-              <AvatarPlaceholder name={avatar.name} size="sm" />
-              <div className="flex-1 min-w-0">
-                <p className={`${colors.text.primary} text-sm font-medium truncate`}>{avatar.name}</p>
-                <p className={`${colors.text.muted} text-xs truncate`}>{avatar.description}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
       {/* Personas List */}
-      <div className="flex-1 px-4 overflow-y-auto">
-        <h3 className={`${colors.text.muted} font-semibold text-sm mb-3`}>Your Personas</h3>
-        <div className="space-y-1">
-          {filteredItems.map((p) => (
-            <button
-              key={p.id}
-              onClick={() => onSelect(p)}
-              className={`w-full text-left p-3 rounded-lg transition-all duration-200 ${colors.text.muted} hover:${colors.bg.secondary} hover:${colors.text.primary}`}
-            >
-              <div className="flex items-center gap-3">
-                <AvatarPlaceholder name={p.name} size="sm" />
+      <div className="flex-1 overflow-y-auto px-4 py-2">
+        {filteredItems.length > 0 ? (
+          <div className="space-y-1">
+            {filteredItems.map((item, index) => (
+              <div
+                key={index}
+                onClick={() => handlePersonaSelect(item)}
+                className={`flex items-center gap-3 p-3 rounded-lg transition-colors cursor-pointer ${
+                  selectedPersona?.id === item.id
+                    ? 'bg-[var(--color-sidebarHighlight)]'
+                    : 'hover:bg-[var(--color-sidebarHighlight)]'
+                }`}
+              >
+                <div className="w-8 h-8 bg-[var(--color-purple)] rounded-full flex items-center justify-center text-white text-sm font-medium">
+                  {item.name.charAt(0).toUpperCase()}
+                </div>
                 <div className="flex-1 min-w-0">
-                  <p className="font-medium truncate">{p.name}</p>
-                  {p.description && (
-                    <p className="text-xs opacity-70 truncate">{p.description}</p>
+                  <p className="text-sm font-medium text-[var(--color-textPrimary)] truncate">
+                    {item.name}
+                  </p>
+                  {item.description && (
+                    <p className="text-xs text-[var(--color-textSecondary)] truncate">
+                      {item.description}
+                    </p>
                   )}
                 </div>
               </div>
-            </button>
-          ))}
-          {filteredItems.length === 0 && (
-            <div className={`text-center py-8 ${colors.text.muted}`}>
-              <p className="text-sm">No personas found</p>
-              {searchQuery && <p className="text-xs mt-1">Try adjusting your search</p>}
-            </div>
-          )}
-        </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-8">
+            <p className="text-[var(--color-textSecondary)] text-sm">No personas found</p>
+          </div>
+        )}
       </div>
 
       {/* User Block */}
-      <div className={`p-4 border-t ${colors.border.primary}`}>
-        <div className={`${colors.bg.secondary} rounded-lg p-3`}>
-          <div className="flex items-center gap-3 mb-2">
-            <AvatarPlaceholder name={userEmail} size="md" />
-            <div className="flex-1 min-w-0">
-              <p className={`${colors.text.primary} text-sm font-medium truncate`}>
-                {userEmail === "guest@example.com" ? "Guest" : userEmail}
-              </p>
-              <p className={`${colors.text.muted} text-xs`}>User</p>
-            </div>
-            <button className={`${colors.text.muted} hover:${colors.text.primary} transition-colors`}>
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </svg>
-            </button>
+      <div className="p-4 border-t border-[var(--color-border)]">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 bg-[var(--color-purple)] rounded-full flex items-center justify-center text-white text-sm font-medium">
+            {userEmail ? userEmail.charAt(0).toUpperCase() : 'U'}
           </div>
-          <button className={`w-full bg-gradient-to-r from-gray-700 to-gray-600 hover:from-gray-600 hover:to-gray-500 ${colors.text.primary} text-sm font-medium py-2 px-3 rounded-md transition-all duration-200`}>
-            Upgrade to VPG+
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium text-[var(--color-textPrimary)] truncate">
+              {userEmail || 'User'}
+            </p>
+          </div>
+          <button className="text-[var(--color-textSecondary)] hover:text-[var(--color-textPrimary)]">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
           </button>
         </div>
       </div>

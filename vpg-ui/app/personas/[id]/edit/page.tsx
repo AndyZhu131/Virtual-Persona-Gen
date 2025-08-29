@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import JsonEditor from "@/components/json-editor";
 import type { Persona } from "@/lib/types";
 import { validateSchemaJson } from "@/lib/validators";
+import { useTheme } from "@/lib/theme-context";
 
 // Simple toast hook for notifications
 function useToast() {
@@ -27,6 +28,7 @@ function useToast() {
 }
 
 export default function PersonaEditPage({ params }: { params: Promise<{ id: string }> }) {
+  const { colors } = useTheme();
   const [resolvedParams, setResolvedParams] = useState<{ id: string } | null>(null);
   const supabase = createClientComponentClient();
   const router = useRouter();
@@ -103,10 +105,10 @@ export default function PersonaEditPage({ params }: { params: Promise<{ id: stri
 
   if (!resolvedParams) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-900">
+      <div className="flex items-center justify-center min-h-screen bg-[var(--color-background)]">
         <div className="text-center">
           <div className="w-8 h-8 border-4 border-purple-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-400">Loading...</p>
+          <p className="text-[var(--color-textSecondary)]">Loading...</p>
         </div>
       </div>
     );
@@ -193,10 +195,10 @@ export default function PersonaEditPage({ params }: { params: Promise<{ id: stri
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-900">
+      <div className="flex items-center justify-center min-h-screen bg-[var(--color-background)]">
         <div className="text-center">
           <div className="w-8 h-8 border-4 border-purple-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-400">Loading persona...</p>
+          <p className="text-[var(--color-textSecondary)]">Loading persona...</p>
         </div>
       </div>
     );
@@ -218,22 +220,22 @@ export default function PersonaEditPage({ params }: { params: Promise<{ id: stri
     );
   }
 
-  return (
-    <div className="min-h-screen bg-gray-900 text-white">
+    return (
+    <div className="min-h-screen bg-[var(--color-background)] text-[var(--color-textPrimary)]">
       {/* Sticky Header */}
-      <header className="sticky top-0 z-10 bg-gray-800 border-b border-gray-700 px-6 py-4">
+      <header className="sticky top-0 z-10 bg-[var(--color-surface)] border-b border-[var(--color-border)] px-6 py-4">
         <div className="flex items-center justify-between max-w-7xl mx-auto">
           <div className="flex items-center gap-4">
             <button
               onClick={handleBack}
-              className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors"
+              className="flex items-center gap-2 text-[var(--color-textSecondary)] hover:text-[var(--color-textPrimary)] transition-colors"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
               Back
             </button>
-            <div className="w-px h-6 bg-gray-600" />
+            <div className="w-px h-6 bg-[var(--color-border)]" />
             <h1 className="text-xl font-semibold truncate max-w-md">
               Edit: {persona.name}
             </h1>
