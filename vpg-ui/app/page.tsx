@@ -277,21 +277,21 @@ export default function AppPage() {
               </div>
             )}
 
-            {/* Demo Personas Section */}
-            <div className="mb-8">
-              <h2 className="text-2xl font-semibold text-[var(--color-textPrimary)] mb-4">
-                Explore Demo Personas
-              </h2>
-              <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-2">
-                {demoPersonas.map((persona) => (
-                  <PersonaCard
-                    key={persona.id}
-                    persona={persona}
-                    onSelect={() => router.push(`/personas/${persona.id}/chat`)}
-                  />
-                ))}
-              </div>
-            </div>
+                         {/* Demo Personas Section */}
+             <div className="mb-8">
+               <h2 className="text-2xl font-semibold text-[var(--color-textPrimary)] mb-4">
+                 Explore Demo Personas
+               </h2>
+               <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-2">
+                 {demoPersonas.map((persona) => (
+                   <PersonaCard
+                     key={persona.id}
+                     persona={persona}
+                     onSelect={() => router.push(`/demo/${persona.id}/chat`)}
+                   />
+                 ))}
+               </div>
+             </div>
           </div>
         </div>
       </div>
