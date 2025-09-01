@@ -15,6 +15,7 @@ export default function ChatPanel({ persona }: { persona: Persona }) {
   const [isSending, setIsSending] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   // Format timestamp for display
   const formatTime = (date?: Date): string => {
@@ -27,8 +28,13 @@ export default function ChatPanel({ persona }: { persona: Persona }) {
   };
 
   // Auto-scroll to latest message
-  useEffect(() => {
+  const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  // Auto-scroll when messages change
+  useEffect(() => {
+    scrollToBottom();
   }, [messages]);
 
   // Focus input on mount
@@ -36,21 +42,41 @@ export default function ChatPanel({ persona }: { persona: Persona }) {
     inputRef.current?.focus();
   }, []);
 
-  const sendMessage = async () => {
-    if (!input.trim() || isSending || input.length > 2000) return;
+  // Truncate messages if too many (keep last 300)
+  const truncateMessages = (msgs: ChatMsg[]) => {
+    if (msgs.length > 500) {
+      return msgs.slice(-300);
+    }
+    return msgs;
+  };
 
-    const userMsg: ChatMsg = { role: "user", content: input.trim(), timestamp: new Date() };
-    setMessages((prev) => [...prev, userMsg]);
+  const sendMessage = async () => {
+    if (!input.trim() || isSending) return;
+
+    // Trim input to 4000 chars
+    const trimmedInput = input.trim().slice(0, 4000);
+    
+    const userMsg: ChatMsg = { 
+      role: "user", 
+      content: trimmedInput, 
+      timestamp: new Date() 
+    };
+    
+    // Append user message immediately
+    setMessages((prev) => truncateMessages([...prev, userMsg]));
     setInput("");
     setIsSending(true);
 
     try {
+      // Keep last 30 messages for context
+      const recentMessages = [...messages, userMsg].slice(-30);
+      
       const response = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
           personaId: persona.id, 
-          messages: [...messages, userMsg] 
+          messages: recentMessages
         })
       });
 
@@ -61,7 +87,7 @@ export default function ChatPanel({ persona }: { persona: Persona }) {
           content: data.reply ?? "I'm sorry, I couldn't process that request.",
           timestamp: new Date()
         };
-        setMessages((prev) => [...prev, assistantMsg]);
+        setMessages((prev) => truncateMessages([...prev, assistantMsg]));
       } else {
         // Handle error
         const errorMsg: ChatMsg = { 
@@ -69,7 +95,7 @@ export default function ChatPanel({ persona }: { persona: Persona }) {
           content: "Sorry, something went wrong. Please try again.",
           timestamp: new Date()
         };
-        setMessages((prev) => [...prev, errorMsg]);
+        setMessages((prev) => truncateMessages([...prev, errorMsg]));
       }
     } catch (error) {
       const errorMsg: ChatMsg = { 
@@ -77,41 +103,40 @@ export default function ChatPanel({ persona }: { persona: Persona }) {
         content: "Network error. Please check your connection.",
         timestamp: new Date()
       };
-      setMessages((prev) => [...prev, errorMsg]);
+      setMessages((prev) => truncateMessages([...prev, errorMsg]));
     } finally {
       setIsSending(false);
     }
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
+  const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       sendMessage();
     }
   };
 
-  return (
-    <div className="flex flex-col h-full bg-[var(--color-surface)]">
-      {/* Persona Header */}
-      <div className="flex items-center gap-3 p-4 border-b border-[var(--color-border)] bg-[var(--color-input)]">
-        <div className="w-10 h-10 bg-gradient-to-br from-[var(--color-accent)] to-blue-600 rounded-full flex items-center justify-center text-white font-semibold text-lg">
-          {persona.name.charAt(0).toUpperCase()}
-        </div>
-        <div className="flex-1">
-          <h3 className="text-lg font-semibold text-[var(--color-textPrimary)]">
-            {persona.name}
-          </h3>
-          <p className="text-sm text-[var(--color-textSecondary)]">
-            {persona.description || "AI Persona"}
-          </p>
-        </div>
-      </div>
+  // Auto-resize textarea
+  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setInput(e.target.value);
+    
+    // Auto-resize
+    const textarea = e.target;
+    textarea.style.height = 'auto';
+    textarea.style.height = Math.min(textarea.scrollHeight, 144) + 'px'; // max 6 lines (24px * 6)
+  };
 
-      {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+  return (
+    <div className="flex h-full min-h-0 flex-col">
+      {/* Scrollable Message List */}
+      <section 
+        aria-label="Conversation"
+        ref={scrollContainerRef}
+        className="flex-1 overflow-y-auto overscroll-contain px-4 py-3 space-y-3"
+      >
         {messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center">
-            <div className="w-16 h-16 bg-[var(--color-input)] rounded-full flex items-center justify-center mx-auto mb-4">
+            <div className="w-16 h-16 bg-white/5 dark:bg-black/5 rounded-full flex items-center justify-center mx-auto mb-4">
               <svg className="w-8 h-8 text-[var(--color-textSecondary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
               </svg>
@@ -124,18 +149,20 @@ export default function ChatPanel({ persona }: { persona: Persona }) {
           messages.map((message, index) => (
             <div
               key={index}
+              role="article"
+              aria-live="polite"
               className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
             >
               <div
-                className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
+                className={`max-w-[75%] break-words px-4 py-3 rounded-2xl ${
                   message.role === "user"
-                    ? "bg-[var(--color-accent)] text-white rounded-br-md"
-                    : "bg-[var(--color-input)] text-[var(--color-textPrimary)] rounded-bl-md border border-[var(--color-border)]"
+                    ? "bg-[var(--color-accent)]/15 text-[var(--color-textPrimary)]"
+                    : "bg-white/5 dark:bg-black/5 text-[var(--color-textPrimary)]"
                 }`}
               >
                 <p className="text-sm">{message.content}</p>
                 {message.timestamp && (
-                  <p className="text-xs text-[var(--color-textSecondary)] mt-1">
+                  <p className="text-xs text-[var(--color-textSecondary)] mt-2">
                     {formatTime(message.timestamp)}
                   </p>
                 )}
@@ -147,7 +174,7 @@ export default function ChatPanel({ persona }: { persona: Persona }) {
         {/* Loading Indicator */}
         {isSending && (
           <div className="flex justify-start">
-            <div className="bg-[var(--color-input)] text-[var(--color-textPrimary)] rounded-2xl rounded-bl-md px-4 py-3 border border-[var(--color-border)] shadow-sm">
+            <div className="bg-white/5 dark:bg-black/5 text-[var(--color-textPrimary)] rounded-2xl px-4 py-3">
               <div className="flex items-center space-x-2">
                 <div className="flex space-x-1">
                   <div className="w-2 h-2 bg-[var(--color-textSecondary)] rounded-full animate-bounce"></div>
@@ -160,41 +187,48 @@ export default function ChatPanel({ persona }: { persona: Persona }) {
           </div>
         )}
 
+        {/* Scroll anchor */}
         <div ref={messagesEndRef} />
-      </div>
+      </section>
 
-      {/* Input Area */}
-      <div className="p-4 border-t border-[var(--color-border)] bg-[var(--color-input)]/95 backdrop-blur-sm">
-        <div className="flex gap-2">
+      {/* Sticky Input Bar */}
+      <div className="sticky bottom-0 inset-x-0 bg-[var(--color-surface)] border-t border-[var(--color-border)] px-4 py-3">
+        <div className="flex gap-3">
           <textarea
             ref={inputRef}
             value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyPress={handleKeyPress}
-            placeholder="Type your message..."
+            onChange={handleInputChange}
+            onKeyDown={handleKeyDown}
+            placeholder={`Message ${persona.name}...`}
+            aria-label="Message input"
             rows={1}
-            maxLength={2000}
-            className="flex-1 bg-[var(--color-background)] border border-[var(--color-inputBorder)] rounded-xl px-4 py-3 pr-12 text-[var(--color-textPrimary)] placeholder-[var(--color-textSecondary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] resize-none"
+            maxLength={4000}
+            className="flex-1 resize-none rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] px-4 py-3 text-[var(--color-textPrimary)] placeholder-[var(--color-textSecondary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent max-h-36 overflow-y-auto"
           />
           <button
             onClick={sendMessage}
             disabled={!input.trim() || isSending}
-            className={`px-4 py-3 rounded-xl transition-colors ${
+            aria-label="Send message"
+            className={`px-6 py-3 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed font-medium ${
               input.trim() && !isSending
                 ? "bg-[var(--color-accent)] text-white hover:opacity-90"
-                : "bg-[var(--color-surface)] text-[var(--color-textSecondary)] cursor-not-allowed"
+                : "bg-[var(--color-surface)] text-[var(--color-textSecondary)]"
             }`}
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-            </svg>
+            {isSending ? (
+              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+              </svg>
+            )}
           </button>
         </div>
         
         {/* Helper Text */}
         <div className="mt-2 flex justify-between items-center text-xs text-[var(--color-textSecondary)]">
           <span>Press Enter to send, Shift+Enter for new line</span>
-          <span>{input.length}/2000</span>
+          <span>{input.length}/4000</span>
         </div>
       </div>
     </div>

@@ -5,7 +5,11 @@ import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { useRouter } from 'next/navigation';
 import ThemeToggle from './theme-toggle';
 
-export default function Navbar() {
+interface NavbarProps {
+  fullWidth?: boolean;
+}
+
+export default function Navbar({ fullWidth = false }: NavbarProps) {
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const supabase = createClientComponentClient();
@@ -26,7 +30,7 @@ export default function Navbar() {
 
   return (
     <header className="border-b border-[var(--color-border)] bg-[var(--color-surface)]">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className={`${fullWidth ? 'w-full px-4 sm:px-6 lg:px-8' : 'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8'}`}>
         <div className="flex justify-between items-center h-16">
           {/* Logo and Search */}
           <div className="flex items-center space-x-8 flex-1">

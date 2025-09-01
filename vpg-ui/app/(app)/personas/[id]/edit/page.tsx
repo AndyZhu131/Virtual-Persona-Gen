@@ -105,9 +105,9 @@ export default function PersonaEditPage({ params }: { params: Promise<{ id: stri
 
   if (!resolvedParams) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-[var(--color-background)]">
+      <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
-          <div className="w-8 h-8 border-4 border-purple-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <div className="w-8 h-8 border-4 border-[var(--color-accent)] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-[var(--color-textSecondary)]">Loading...</p>
         </div>
       </div>
@@ -195,9 +195,9 @@ export default function PersonaEditPage({ params }: { params: Promise<{ id: stri
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-[var(--color-background)]">
+      <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
-          <div className="w-8 h-8 border-4 border-purple-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <div className="w-8 h-8 border-4 border-[var(--color-accent)] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-[var(--color-textSecondary)]">Loading persona...</p>
         </div>
       </div>
@@ -206,12 +206,12 @@ export default function PersonaEditPage({ params }: { params: Promise<{ id: stri
 
   if (!persona) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-900">
+      <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
-          <p className="text-gray-400 mb-4">Persona not found</p>
+          <p className="text-[var(--color-textSecondary)] mb-4">Persona not found</p>
           <button
             onClick={handleBack}
-            className="text-purple-400 hover:text-purple-300 underline"
+            className="text-[var(--color-button)] hover:opacity-80 underline"
           >
             Go back to app
           </button>
@@ -220,155 +220,151 @@ export default function PersonaEditPage({ params }: { params: Promise<{ id: stri
     );
   }
 
-    return (
-    <div className="min-h-screen bg-[var(--color-background)] text-[var(--color-textPrimary)]">
-      {/* Sticky Header */}
-      <header className="sticky top-0 z-10 bg-[var(--color-surface)] border-b border-[var(--color-border)] px-6 py-4">
-        <div className="flex items-center justify-between max-w-7xl mx-auto">
-          <div className="flex items-center gap-4">
-            <button
-              onClick={handleBack}
-              className="flex items-center gap-2 text-[var(--color-textSecondary)] hover:text-[var(--color-textPrimary)] transition-colors"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-              Back
-            </button>
-            <div className="w-px h-6 bg-[var(--color-border)]" />
-            <h1 className="text-xl font-semibold truncate max-w-md">
-              Edit: {persona.name}
-            </h1>
-          </div>
-          
+  return (
+    <div className="p-6">
+      {/* Page Header */}
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-4">
           <button
-            onClick={handleSave}
-            disabled={isSaving || nameError !== null || schemaError !== null}
-            className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 disabled:from-gray-600 disabled:to-gray-600 text-white font-medium px-6 py-2.5 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            onClick={handleBack}
+            className="flex items-center gap-2 text-[var(--color-textSecondary)] hover:text-[var(--color-textPrimary)] transition-colors"
           >
-            {isSaving ? (
-              <>
-                <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                Saving...
-              </>
-            ) : (
-              <>
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-                Save
-              </>
-            )}
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+            Back
           </button>
+          <div className="w-px h-6 bg-[var(--color-border)]" />
+          <h1 className="text-xl font-semibold truncate max-w-md">
+            Edit: {persona.name}
+          </h1>
         </div>
-      </header>
+        
+        <button
+          onClick={handleSave}
+          disabled={isSaving || nameError !== null || schemaError !== null}
+          className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 disabled:from-gray-600 disabled:to-gray-600 text-white font-medium px-6 py-2.5 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+        >
+          {isSaving ? (
+            <>
+              <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              Saving...
+            </>
+          ) : (
+            <>
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+              Save
+            </>
+          )}
+        </button>
+      </div>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto p-6">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Left Column - Basic Fields */}
-          <div className="space-y-6">
-            <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
-              <h2 className="text-lg font-semibold mb-4 text-white">Basic Information</h2>
-              
-              {/* Name Field */}
-              <div className="mb-4">
-                <label htmlFor="name" className="block text-sm font-medium text-gray-300 mb-2">
-                  Name *
-                </label>
-                <input
-                  id="name"
-                  type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="Enter persona name"
-                  className={`w-full bg-gray-700 border rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 transition-all ${
-                    nameError 
-                      ? "border-red-500 focus:ring-red-500" 
-                      : "border-gray-600 focus:ring-purple-500 focus:border-transparent"
-                  }`}
-                />
-                {nameError && (
-                  <p className="mt-2 text-sm text-red-400 flex items-center gap-1">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Left Column - Basic Fields */}
+        <div className="space-y-6">
+          <div className="bg-[var(--color-surface)] rounded-lg p-6 border border-[var(--color-border)]">
+            <h2 className="text-lg font-semibold mb-4 text-[var(--color-textPrimary)]">Basic Information</h2>
+            
+            {/* Name Field */}
+            <div className="mb-4">
+              <label htmlFor="name" className="block text-sm font-medium text-[var(--color-textPrimary)] mb-2">
+                Name *
+              </label>
+              <input
+                id="name"
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Enter persona name"
+                className={`w-full bg-[var(--color-input)] border rounded-lg px-4 py-3 text-[var(--color-textPrimary)] placeholder-[var(--color-textSecondary)] focus:outline-none focus:ring-2 transition-all ${
+                  nameError 
+                    ? "border-red-500 focus:ring-red-500" 
+                    : "border-[var(--color-inputBorder)] focus:ring-[var(--color-accent)] focus:border-transparent"
+                }`}
+              />
+              {nameError && (
+                <p className="mt-2 text-sm text-red-400 flex items-center gap-1">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  {nameError}
+                </p>
+              )}
+            </div>
+
+            {/* Description Field */}
+            <div>
+              <label htmlFor="description" className="block text-sm font-medium text-[var(--color-textPrimary)] mb-2">
+                Description
+              </label>
+              <textarea
+                id="description"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Enter a brief description of this persona"
+                rows={4}
+                className={`w-full bg-[var(--color-input)] border rounded-lg px-4 py-3 text-[var(--color-textPrimary)] placeholder-[var(--color-textSecondary)] focus:outline-none focus:ring-2 transition-all resize-none ${
+                  descriptionError 
+                    ? "border-red-500 focus:ring-red-500" 
+                    : "border-[var(--color-inputBorder)] focus:ring-[var(--color-accent)] focus:border-transparent"
+                }`}
+              />
+              <div className="mt-2 flex justify-between items-center">
+                {descriptionError ? (
+                  <p className="text-sm text-red-400 flex items-center gap-1">
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
-                    {nameError}
+                    {descriptionError}
                   </p>
+                ) : (
+                  <div></div>
                 )}
-              </div>
-
-              {/* Description Field */}
-              <div>
-                <label htmlFor="description" className="block text-sm font-medium text-gray-300 mb-2">
-                  Description
-                </label>
-                <textarea
-                  id="description"
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Enter a brief description of this persona"
-                  rows={4}
-                  className={`w-full bg-gray-700 border rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 transition-all resize-none ${
-                    descriptionError 
-                      ? "border-red-500 focus:ring-red-500" 
-                      : "border-gray-600 focus:ring-purple-500 focus:border-transparent"
-                  }`}
-                />
-                <div className="mt-2 flex justify-between items-center">
-                  {descriptionError ? (
-                    <p className="text-sm text-red-400 flex items-center gap-1">
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                      {descriptionError}
-                    </p>
-                  ) : (
-                    <div></div>
-                  )}
-                  <span className={`text-sm ${description.length > 450 ? 'text-red-400' : 'text-gray-400'}`}>
-                    {description.length}/500
-                  </span>
-                </div>
+                <span className={`text-sm ${description.length > 450 ? 'text-red-400' : 'text-[var(--color-textSecondary)]'}`}>
+                  {description.length}/500
+                </span>
               </div>
             </div>
           </div>
+        </div>
 
-          {/* Right Column - JSON Editor */}
-          <div className="space-y-6">
-            <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
-              <h2 className="text-lg font-semibold mb-4 text-white">Schema Configuration</h2>
+        {/* Right Column - JSON Editor */}
+        <div className="space-y-6">
+          <div className="bg-[var(--color-surface)] rounded-lg p-6 border border-[var(--color-border)]">
+            <h2 className="text-lg font-semibold mb-4 text-[var(--color-textPrimary)]">Schema Configuration</h2>
+            
+            <div className="space-y-3">
+              <label htmlFor="schema" className="block text-sm font-medium text-[var(--color-textPrimary)]">
+                JSON Schema
+              </label>
+              <div className={`border rounded-lg overflow-hidden ${
+                schemaError ? "border-red-500" : "border-[var(--color-inputBorder)]"
+              }`}>
+                <JsonEditor value={schema} onChange={setSchema} />
+              </div>
               
-              <div className="space-y-3">
-                <label htmlFor="schema" className="block text-sm font-medium text-gray-300">
-                  JSON Schema
-                </label>
-                <div className={`border rounded-lg overflow-hidden ${
-                  schemaError ? "border-red-500" : "border-gray-600"
-                }`}>
-                  <JsonEditor value={schema} onChange={setSchema} />
-                </div>
-                
-                {schemaError && (
-                  <p className="text-sm text-red-400 flex items-start gap-1">
-                    <svg className="w-4 h-4 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    <span>{schemaError}</span>
-                  </p>
-                )}
-                
-                <div className="text-xs text-gray-400 bg-gray-700 rounded p-3">
-                  <p className="font-medium mb-1">Schema Guidelines:</p>
-                  <ul className="space-y-1 text-xs">
-                    <li>• Must be valid JSON object</li>
-                    <li>• Use for persona behavior configuration</li>
-                    <li>• Example: {"{ \"tone\": \"friendly\", \"style\": \"casual\" }"}</li>
-                  </ul>
-                </div>
+              {schemaError && (
+                <p className="text-sm text-red-400 flex items-start gap-1">
+                  <svg className="w-4 h-4 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span>{schemaError}</span>
+                </p>
+              )}
+              
+              <div className="text-xs text-[var(--color-textSecondary)] bg-[var(--color-input)] rounded p-3">
+                <p className="font-medium mb-1">Schema Guidelines:</p>
+                <ul className="space-y-1 text-xs">
+                  <li>• Must be valid JSON object</li>
+                  <li>• Use for persona behavior configuration</li>
+                  <li>• Example: {"{ \"tone\": \"friendly\", \"style\": \"casual\" }"}</li>
+                </ul>
               </div>
             </div>
           </div>

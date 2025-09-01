@@ -3,13 +3,9 @@
 import { useEffect, useState } from "react";
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 import { useRouter } from "next/navigation";
-import PersonaList from "@/components/persona-list";
 import PersonaCard from "@/components/persona-card";
-
 import EmptyState from "@/components/empty-state";
-import Navbar from "@/components/navbar";
 import { demoPersonas } from "@/lib/demos";
-
 import type { Persona, NewPersona } from "@/lib/types";
 
 export default function AppPage() {
@@ -182,9 +178,9 @@ export default function AppPage() {
                 <h3 className="text-lg font-semibold text-[var(--color-textPrimary)] mb-2">
                   Check Your Email
                 </h3>
-                                  <p className="text-[var(--color-textSecondary)] mb-4">
-                    We&apos;ve sent a magic link to <strong>{loginEmail}</strong>
-                  </p>
+                <p className="text-[var(--color-textSecondary)] mb-4">
+                  We&apos;ve sent a magic link to <strong>{loginEmail}</strong>
+                </p>
                 <p className="text-sm text-[var(--color-textSecondary)]">
                   Click the link in your email to sign in and start creating personas.
                 </p>
@@ -213,86 +209,68 @@ export default function AppPage() {
   }
 
   return (
-    <div className="bg-[var(--color-background)] min-h-screen">
-      {/* Left Fixed Sidebar */}
-      <PersonaList 
-        items={myPersonas} 
-        onSelect={(persona) => router.push(`/personas/${persona.id}/chat`)}
-        onCreate={createPersona}
-      />
-      
-      {/* Main Content Area */}
-      <div className="ml-80 flex flex-col min-h-screen">
-        {/* Top Navigation Bar */}
-        <Navbar />
-        
-        {/* Main Content */}
-        <div className="flex-1 overflow-y-auto">
-          <div className="max-w-7xl mx-auto p-8">
-            {/* Welcome Section */}
-            <div className="mb-8">
-              <h1 className="text-4xl font-bold text-[var(--color-textPrimary)] mb-2">
-                Welcome to VPG
-              </h1>
-              <p className="text-[var(--color-textSecondary)] text-lg">
-                Create and manage your virtual personas with AI-powered conversations
-              </p>
-            </div>
+    <div className="p-8">
+      {/* Welcome Section */}
+      <div className="mb-8">
+        <h1 className="text-4xl font-bold text-[var(--color-textPrimary)] mb-2">
+          Welcome to VPG
+        </h1>
+        <p className="text-[var(--color-textSecondary)] text-lg">
+          Create and manage your virtual personas with AI-powered conversations
+        </p>
+      </div>
 
-            {/* Personas Section */}
-            {userId && (
-              <div className="mb-8">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-2xl font-semibold text-[var(--color-textPrimary)]">
-                    Your Personas
-                  </h2>
-                  <button
-                    onClick={createPersona}
-                    className="px-4 py-2 bg-[var(--color-button)] text-white rounded-lg hover:opacity-90 transition-opacity"
-                  >
-                    Create Persona
-                  </button>
-                </div>
-
-                {myPersonas.length === 0 ? (
-                  <EmptyState 
-                    onCreate={createPersona}
-                    onTryDemo={() => saveDemo({
-                      name: "Demo Character",
-                      description: "A friendly AI assistant ready to help with various tasks",
-                      schema: { demo: true, personality: "helpful", tone: "casual" }
-                    })}
-                  />
-                ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                    {myPersonas.map((persona) => (
-                      <PersonaCard
-                        key={persona.id}
-                        persona={persona}
-                        onSelect={() => router.push(`/personas/${persona.id}/chat`)}
-                      />
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-
-                         {/* Demo Personas Section */}
-             <div className="mb-8">
-               <h2 className="text-2xl font-semibold text-[var(--color-textPrimary)] mb-4">
-                 Explore Demo Personas
-               </h2>
-               <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-2">
-                 {demoPersonas.map((persona) => (
-                   <PersonaCard
-                     key={persona.id}
-                     persona={persona}
-                     onSelect={() => router.push(`/demo/${persona.id}/chat`)}
-                   />
-                 ))}
-               </div>
-             </div>
+      {/* Personas Section */}
+      {userId && (
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-2xl font-semibold text-[var(--color-textPrimary)]">
+              Your Personas
+            </h2>
+            <button
+              onClick={createPersona}
+              className="px-4 py-2 bg-[var(--color-button)] text-white rounded-lg hover:opacity-90 transition-opacity"
+            >
+              Create Persona
+            </button>
           </div>
+
+          {myPersonas.length === 0 ? (
+            <EmptyState 
+              onCreate={createPersona}
+              onTryDemo={() => saveDemo({
+                name: "Demo Character",
+                description: "A friendly AI assistant ready to help with various tasks",
+                schema: { demo: true, personality: "helpful", tone: "casual" }
+              })}
+            />
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {myPersonas.map((persona) => (
+                <PersonaCard
+                  key={persona.id}
+                  persona={persona}
+                  onSelect={() => router.push(`/personas/${persona.id}/chat`)}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Demo Personas Section */}
+      <div className="mb-8">
+        <h2 className="text-2xl font-semibold text-[var(--color-textPrimary)] mb-4">
+          Explore Demo Personas
+        </h2>
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-2">
+          {demoPersonas.map((persona) => (
+            <PersonaCard
+              key={persona.id}
+              persona={persona}
+              onSelect={() => router.push(`/personas/${persona.id}/chat`)}
+            />
+          ))}
         </div>
       </div>
     </div>

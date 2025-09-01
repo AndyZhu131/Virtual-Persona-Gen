@@ -3,8 +3,8 @@
 import { useEffect, useState } from 'react';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { useRouter } from 'next/navigation';
-import PersonaList from '@/components/persona-list';
 import ChatPanel from '@/components/chat-panel';
+import { demoPersonas } from '@/lib/demos';
 import type { Persona } from '@/lib/types';
 
 interface PageProps {
@@ -16,8 +16,6 @@ export default function ChatPage({ params }: PageProps) {
   const [persona, setPersona] = useState<Persona | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [myPersonas, setMyPersonas] = useState<Persona[]>([]);
-  const [userId, setUserId] = useState<string | null>(null);
   const supabase = createClientComponentClient();
   const router = useRouter();
 
@@ -25,30 +23,6 @@ export default function ChatPage({ params }: PageProps) {
   useEffect(() => {
     params.then(setResolvedParams);
   }, [params]);
-
-  // Get user ID
-  useEffect(() => {
-    const getUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      setUserId(user?.id || null);
-    };
-    getUser();
-  }, [supabase]);
-
-  // Fetch personas for current user
-  useEffect(() => {
-    if (!userId) return;
-    supabase
-      .from("personas")
-      .select("*")
-      .eq("owner_id", userId)
-      .order("updated_at", { ascending: false })
-      .then(({ data, error }) => {
-        if (!error && data) {
-          setMyPersonas(data as Persona[]);
-        }
-      });
-  }, [supabase, userId]);
 
   // Fetch persona data
   useEffect(() => {
@@ -59,6 +33,15 @@ export default function ChatPage({ params }: PageProps) {
         setLoading(true);
         setError(null);
 
+        // Check if this is a demo persona first
+        const demoPersona = demoPersonas.find(p => p.id === resolvedParams.id);
+        if (demoPersona) {
+          setPersona(demoPersona);
+          setLoading(false);
+          return;
+        }
+
+        // If not a demo persona, fetch from Supabase
         const { data, error } = await supabase
           .from('personas')
           .select('*')
@@ -129,45 +112,69 @@ export default function ChatPage({ params }: PageProps) {
   }
 
   return (
-    <div className="min-h-screen bg-[var(--color-background)] flex">
-      {/* Left Fixed Sidebar */}
-      <PersonaList 
-        items={myPersonas} 
-        onSelect={(persona) => router.push(`/personas/${persona.id}/chat`)}
-        onCreate={() => router.push('/personas/new')}
-        onSearch={() => {}}
-      />
+    <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-4 p-4 h-full">
+      {/* Left: Chat Panel */}
+      <div className="min-h-0">
+        <ChatPanel persona={persona} />
+      </div>
 
-      {/* Main Content Area */}
-      <div className="ml-80 flex-1 flex flex-col">
-        {/* Header */}
-        <header className="bg-[var(--color-surface)] border-b border-[var(--color-border)] p-4">
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => router.push('/')}
-              className="flex items-center gap-2 text-[var(--color-textSecondary)] hover:text-[var(--color-textPrimary)] transition-colors"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-              Back
-            </button>
-            <div className="w-px h-6 bg-[var(--color-border)]" />
-            <div>
-              <h1 className="text-xl font-semibold text-[var(--color-textPrimary)]">{persona.name}</h1>
-              {persona.description && (
-                <p className="text-[var(--color-textSecondary)] text-sm">{persona.description}</p>
-              )}
+      {/* Right: Persona Info Panel */}
+      <aside className="lg:sticky lg:top-20 h-fit lg:h-[calc(100vh-6rem)] overflow-y-auto bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-4">
+        {/* Avatar and Name */}
+        <div className="text-center mb-6">
+          <div className="w-24 h-24 bg-[var(--color-button)] rounded-full mx-auto mb-4 flex items-center justify-center text-white text-3xl font-bold">
+            {persona.name.charAt(0).toUpperCase()}
+          </div>
+          <h2 className="text-xl font-semibold text-[var(--color-textPrimary)]">
+            {persona.name}
+          </h2>
+        </div>
+        
+        {/* Persona Details */}
+        <div className="space-y-4">
+          <div>
+            <h3 className="font-medium text-[var(--color-textPrimary)] mb-2">Description</h3>
+            <p className="text-sm text-[var(--color-textSecondary)]">
+              {persona.description || 'No description available'}
+            </p>
+          </div>
+          
+          <div>
+            <h3 className="font-medium text-[var(--color-textPrimary)] mb-2">Personality</h3>
+            <p className="text-sm text-[var(--color-textSecondary)]">
+              {(persona.schema as any)?.personality || 'Not specified'}
+            </p>
+          </div>
+          
+          <div>
+            <h3 className="font-medium text-[var(--color-textPrimary)] mb-2">Tone</h3>
+            <p className="text-sm text-[var(--color-textSecondary)]">
+              {(persona.schema as any)?.tone || 'Not specified'}
+            </p>
+          </div>
+          
+          <div>
+            <h3 className="font-medium text-[var(--color-textPrimary)] mb-2">Expertise</h3>
+            <div className="flex flex-wrap gap-2">
+              {Array.isArray((persona.schema as any)?.expertise) ? (persona.schema as any).expertise.map((skill: string, index: number) => (
+                <span
+                  key={index}
+                  className="px-2 py-1 bg-[var(--color-button)] text-white text-xs rounded-full"
+                >
+                  {skill}
+                </span>
+              )) : 'Not specified'}
             </div>
           </div>
-        </header>
-
-        {/* Chat Panel */}
-        <div className="flex-1">
-          <ChatPanel persona={persona} />
+          
+          <div>
+            <h3 className="font-medium text-[var(--color-textPrimary)] mb-2">Style</h3>
+            <p className="text-sm text-[var(--color-textSecondary)]">
+              {(persona.schema as any)?.style || 'Not specified'}
+            </p>
+          </div>
         </div>
-      </div>
+      </aside>
     </div>
   );
 }
-
