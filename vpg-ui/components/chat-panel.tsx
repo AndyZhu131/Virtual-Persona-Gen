@@ -132,103 +132,107 @@ export default function ChatPanel({ persona }: { persona: Persona }) {
       <section 
         aria-label="Conversation"
         ref={scrollContainerRef}
-        className="flex-1 overflow-y-auto overscroll-contain px-4 py-3 space-y-3"
+        className="flex-1 overflow-y-auto overscroll-contain px-4 py-3"
       >
-        {messages.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-center">
-            <div className="w-16 h-16 bg-white/5 dark:bg-black/5 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg className="w-8 h-8 text-[var(--color-textSecondary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-              </svg>
+        <div className="mx-auto w-full max-w-3xl space-y-3">
+          {messages.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-full text-center">
+              <div className="w-16 h-16 bg-white/5 dark:bg-black/5 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg className="w-8 h-8 text-[var(--color-textSecondary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                </svg>
+              </div>
+              <p className="text-[var(--color-textSecondary)] text-sm">
+                Start a conversation with {persona.name}
+              </p>
             </div>
-            <p className="text-[var(--color-textSecondary)] text-sm">
-              Start a conversation with {persona.name}
-            </p>
-          </div>
-        ) : (
-          messages.map((message, index) => (
-            <div
-              key={index}
-              role="article"
-              aria-live="polite"
-              className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
-            >
+          ) : (
+            messages.map((message, index) => (
               <div
-                className={`max-w-[75%] break-words px-4 py-3 rounded-2xl ${
-                  message.role === "user"
-                    ? "bg-[var(--color-accent)]/15 text-[var(--color-textPrimary)]"
-                    : "bg-white/5 dark:bg-black/5 text-[var(--color-textPrimary)]"
-                }`}
+                key={index}
+                role="article"
+                aria-live="polite"
+                className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
               >
-                <p className="text-sm">{message.content}</p>
-                {message.timestamp && (
-                  <p className="text-xs text-[var(--color-textSecondary)] mt-2">
-                    {formatTime(message.timestamp)}
-                  </p>
-                )}
-              </div>
-            </div>
-          ))
-        )}
-
-        {/* Loading Indicator */}
-        {isSending && (
-          <div className="flex justify-start">
-            <div className="bg-white/5 dark:bg-black/5 text-[var(--color-textPrimary)] rounded-2xl px-4 py-3">
-              <div className="flex items-center space-x-2">
-                <div className="flex space-x-1">
-                  <div className="w-2 h-2 bg-[var(--color-textSecondary)] rounded-full animate-bounce"></div>
-                  <div className="w-2 h-2 bg-[var(--color-textSecondary)] rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                  <div className="w-2 h-2 bg-[var(--color-textSecondary)] rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                <div
+                  className={`max-w-[75%] break-words px-4 py-3 rounded-2xl ${
+                    message.role === "user"
+                      ? "bg-[var(--color-accent)]/15 text-[var(--color-textPrimary)]"
+                      : "bg-white/5 dark:bg-black/5 text-[var(--color-textPrimary)]"
+                  }`}
+                >
+                  <p className="text-sm">{message.content}</p>
+                  {message.timestamp && (
+                    <p className="text-xs text-[var(--color-textSecondary)] mt-2">
+                      {formatTime(message.timestamp)}
+                    </p>
+                  )}
                 </div>
-                <span className="text-sm text-[var(--color-textSecondary)]">typing...</span>
+              </div>
+            ))
+          )}
+
+          {/* Loading Indicator */}
+          {isSending && (
+            <div className="flex justify-start">
+              <div className="bg-white/5 dark:bg-black/5 text-[var(--color-textPrimary)] rounded-2xl px-4 py-3">
+                <div className="flex items-center space-x-2">
+                  <div className="flex space-x-1">
+                    <div className="w-2 h-2 bg-[var(--color-textSecondary)] rounded-full animate-bounce"></div>
+                    <div className="w-2 h-2 bg-[var(--color-textSecondary)] rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                    <div className="w-2 h-2 bg-[var(--color-textSecondary)] rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                  </div>
+                  <span className="text-sm text-[var(--color-textSecondary)]">typing...</span>
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Scroll anchor */}
-        <div ref={messagesEndRef} />
+          {/* Scroll anchor */}
+          <div ref={messagesEndRef} />
+        </div>
       </section>
 
       {/* Sticky Input Bar */}
       <div className="sticky bottom-0 inset-x-0 bg-[var(--color-surface)] border-t border-[var(--color-border)] px-4 py-3">
-        <div className="flex gap-3">
-          <textarea
-            ref={inputRef}
-            value={input}
-            onChange={handleInputChange}
-            onKeyDown={handleKeyDown}
-            placeholder={`Message ${persona.name}...`}
-            aria-label="Message input"
-            rows={1}
-            maxLength={4000}
-            className="flex-1 resize-none rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] px-4 py-3 text-[var(--color-textPrimary)] placeholder-[var(--color-textSecondary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent max-h-36 overflow-y-auto"
-          />
-          <button
-            onClick={sendMessage}
-            disabled={!input.trim() || isSending}
-            aria-label="Send message"
-            className={`px-6 py-3 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed font-medium ${
-              input.trim() && !isSending
-                ? "bg-[var(--color-accent)] text-white hover:opacity-90"
-                : "bg-[var(--color-surface)] text-[var(--color-textSecondary)]"
-            }`}
-          >
-            {isSending ? (
-              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-            ) : (
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-              </svg>
-            )}
-          </button>
-        </div>
-        
-        {/* Helper Text */}
-        <div className="mt-2 flex justify-between items-center text-xs text-[var(--color-textSecondary)]">
-          <span>Press Enter to send, Shift+Enter for new line</span>
-          <span>{input.length}/4000</span>
+        <div className="mx-auto w-full max-w-3xl">
+          <div className="flex gap-3">
+            <textarea
+              ref={inputRef}
+              value={input}
+              onChange={handleInputChange}
+              onKeyDown={handleKeyDown}
+              placeholder={`Message ${persona.name}...`}
+              aria-label="Message input"
+              rows={1}
+              maxLength={4000}
+              className="flex-1 resize-none rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] px-4 py-3 text-[var(--color-textPrimary)] placeholder-[var(--color-textSecondary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent max-h-36 overflow-y-auto"
+            />
+            <button
+              onClick={sendMessage}
+              disabled={!input.trim() || isSending}
+              aria-label="Send message"
+              className={`px-6 py-3 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed font-medium ${
+                input.trim() && !isSending
+                  ? "bg-[var(--color-accent)] text-white hover:opacity-90"
+                  : "bg-[var(--color-surface)] text-[var(--color-textSecondary)]"
+              }`}
+            >
+              {isSending ? (
+                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                </svg>
+              )}
+            </button>
+          </div>
+          
+          {/* Helper Text */}
+          <div className="mt-2 flex justify-between items-center text-xs text-[var(--color-textSecondary)]">
+            <span>Press Enter to send, Shift+Enter for new line</span>
+            <span>{input.length}/4000</span>
+          </div>
         </div>
       </div>
     </div>

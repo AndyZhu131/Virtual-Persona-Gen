@@ -40,8 +40,8 @@ async def create_persona(request: Dict[str, Any]):
         max_output_tokens = request.get("max_output_tokens")
         reasoning_effort = request.get("reasoning_effort", "low")
         
-        # Generate persona
-        result = generator.generate(
+        # Generate persona only (without opening line)
+        result = generator.generate_persona_only(
             user_input=description,
             clean_with_validator=False,  # Clean the output using PersonaValidator
             max_output_tokens=max_output_tokens,
@@ -54,50 +54,34 @@ async def create_persona(request: Dict[str, Any]):
 
 @app.post("/conversation/start")
 async def start_conversation(request: Dict[str, Any]):
-    """Generate a persona and opening line for a new conversation"""
+    """Generate a persona and opening line for a new conversation using unified generator"""
     try:
         description = request.get("description")
         context = request.get("context")  # Optional
         max_output_tokens = request.get("max_output_tokens")
+        reasoning_effort = request.get("reasoning_effort", "low")
         
         if not description:
             raise HTTPException(status_code=400, detail="Description is required")
         
-        # Generate persona
-        persona_generator = PersonaGenerator.from_env()
-        persona_result = persona_generator.generate(
+        # Use unified generator to generate both persona and opening line
+        generator = PersonaGenerator.from_env()
+        result = generator.generate_persona_with_opening_line(
             user_input=description,
+            context=context,
             clean_with_validator=False,
             max_output_tokens=max_output_tokens,
-            reasoning_effort="low"  # Use default for persona generation
+            reasoning_effort=reasoning_effort
         )
         
-        # Generate opening line
-        conversation_generator = ConversationGenerator.from_env()
-        opening_result = conversation_generator.generate_opening_line(
-            persona=persona_result["persona"],
-            context=context,
-            max_output_tokens=max_output_tokens
-        )
-        
-        # Combine metadata from both operations
-        combined_metadata = {
-            "persona_generation": persona_result["metadata"],
-            "opening_line_generation": opening_result["metadata"]
-        }
-        
-        return {
-            "persona": persona_result["persona"],
-            "opening_line": opening_result["opening_line"],
-            "metadata": combined_metadata
-        }
+        return result
         
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
 @app.post("/conversation/respond")
 async def continue_conversation(request: Dict[str, Any]):
-    """Generate a response in an ongoing conversation"""
+    """Generate a response in an ongoing conversation using unified generator"""
     try:
         persona = request.get("persona")
         conversation_history = request.get("conversation_history")
@@ -111,9 +95,9 @@ async def continue_conversation(request: Dict[str, Any]):
         if not isinstance(conversation_history, list):
             raise HTTPException(status_code=400, detail="Conversation history must be a list")
         
-        # Generate conversation response
-        conversation_generator = ConversationGenerator.from_env()
-        response_result = conversation_generator.generate_conversation_response(
+        # Use unified generator for conversation response
+        generator = PersonaGenerator.from_env()
+        response_result = generator.generate_conversation_response(
             persona=persona,
             conversation_history=conversation_history,
             context=context,

@@ -1,4 +1,5 @@
-# persona_generator/generator.py
+# persona_generator/PersonaGenerator.py
+# Unified Persona Generator that combines persona generation and conversation starting line
 # Requirements:
 #   pip install openai==1.* jsonschema python-dotenv
 # Env:
@@ -13,17 +14,18 @@ from typing import Dict, Any, Optional, List
 
 from dotenv import load_dotenv
 from openai import OpenAI
-from persona_generator.PersonaValidator import PersonaValidator  # <-- use the class-based validator
+from persona_generator.PersonaJsonGenerator import PersonaJsonGenerator
+from conversation_generator.ConversationGenerator import ConversationGenerator
 
 
 class PersonaGenerator:
     """
-    Class-based persona generator that:
-      1) loads a JSON Schema
-      2) builds an OpenAI function definition from the schema
-      3) builds messages
-      4) calls OpenAI with function calling
-      5) validates and returns the persona dict (via PersonaValidator)
+    Unified Persona Generator that combines:
+    1) Persona generation using JSON schema validation
+    2) Conversation starting line generation based on the persona
+    
+    This class provides a single interface for generating both persona and opening line
+    from a user prompt, making it easier to use than the separate generators.
     """
     
     # Global constant for max output tokens
@@ -34,39 +36,40 @@ class PersonaGenerator:
         schema_path: str,
         model: str,
         api_key: str,
-        validator: Optional[PersonaValidator] = None,
+        persona_validator: Optional[Any] = None,
     ) -> None:
         """
         Args:
             schema_path: Path to the persona JSON schema file.
             model: OpenAI model name (e.g., 'gpt-5-nano').
             api_key: OpenAI API key.
-            validator: Optional PersonaValidator instance. If None, one will be created.
-
+            persona_validator: Optional PersonaValidator instance. If None, one will be created.
         """
         self.schema_path = schema_path
         self.model = model
         self.api_key = api_key
 
+        # Initialize the JSON persona generator
+        self._persona_generator = PersonaJsonGenerator(
+            schema_path=schema_path,
+            model=model,
+            api_key=api_key,
+            validator=persona_validator
+        )
+        
+        # Initialize the conversation generator
+        self._conversation_generator = ConversationGenerator(
+            api_key=api_key,
+            model=model
+        )
 
-        # Load schema once for building function definition
-        self._schema: Dict[str, Any] = self._load_schema(schema_path)
-        self._function_def: Dict[str, Any] = self._schema_to_function(self._schema)
-
-        # OpenAI client
-        self._client = OpenAI(api_key=self.api_key)
-
-        # Validation strategy: always use PersonaValidator
-        self._validator: PersonaValidator = validator or PersonaValidator(schema_path=self.schema_path)
-
-    # --------- Factories ---------
+    # --------- Factory Methods ---------
     @classmethod
     def from_env(
         cls,
-        validator: Optional[PersonaValidator] = None,
+        persona_validator: Optional[Any] = None,
         default_model: str = "gpt-5-nano",
         default_schema_path: str = "persona_generator/schema/persona_schema_v1.1.json",
-
     ) -> "PersonaGenerator":
         """
         Create a PersonaGenerator using environment variables.
@@ -79,169 +82,18 @@ class PersonaGenerator:
         model = os.getenv("OPENAI_MODEL", default_model)
         schema_path = os.getenv("SCHEMA_PATH", default_schema_path)
 
-        # If no validator provided, create one bound to the same schema_path
-        if validator is None:
-            validator = PersonaValidator(schema_path=schema_path)
-
         return cls(
             schema_path=schema_path,
             model=model,
             api_key=api_key,
-            validator=validator,
-
+            persona_validator=persona_validator,
         )
-
-    # --------- Core steps ---------
-    @staticmethod
-    def _load_schema(path: str) -> Dict[str, Any]:
-        with open(path, "r", encoding="utf-8") as f:
-            return json.load(f)
-
-    @staticmethod
-    def _schema_to_function(schema: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Convert JSON Schema (subset) into an OpenAI function definition.
-        """
-        return {
-            "name": "generate_persona",
-            "description": "Generate a conversation-ready persona.",
-            "parameters": {
-                "type": "object",
-                "properties": schema.get("properties", {}),
-                "required": schema.get("required", []),
-                "additionalProperties": schema.get("additionalProperties", False),
-            },
-        }
-
-    @staticmethod
-    def _build_api_input(
-        user_input: str,
-        recommend_llm_prompt_injection: Optional[str] = None,
-        extra_guidelines: Optional[List[str]] = None,
-    ) -> List[Dict[str, str]]:
-        """
-        Build the system + user input for the Responses API.
-        """
-        guidelines = [
-            "Return only by calling the function with a valid persona object.",
-            "Keep values concise and specific.",
-            "Do not add fields not defined in the schema.",
-            "Do not generate optional fields if they are not necessary or relevant to the persona.",
-            "Only include optional fields when they add meaningful value to the persona description.",
-        ]
-        if extra_guidelines:
-            guidelines.extend(extra_guidelines)
-
-        system_text = "You are a persona generator. " + " ".join(guidelines)
-
-        user_lines = [
-            "Create a persona for dialogue generation from this description:",
-            user_input,
-            "",
-            "Required fields: role, tone, traits, dialogue_behavior.",
-            "Optional fields: id, name, quirks, scenario_tags, llm_prompt_injection.",
-            "Note: Only include optional fields if they are necessary and add meaningful value to the persona. Do not generate optional fields just to fill them out.",
-        ]
-        if recommend_llm_prompt_injection:
-            user_lines.append(
-                f"If appropriate, set 'llm_prompt_injection' to: {recommend_llm_prompt_injection}"
-            )
-
-        return [
-            {"role": "system", "content": system_text},
-            {"role": "user", "content": "\n".join(user_lines)},
-        ]
-
-    def _call_openai_function(self, 
-                             api_input: List[Dict[str, str]], 
-                             max_output_tokens: int = MAX_OUTPUT_TOKENS,
-                             reasoning_effort: Optional[str] = "low") -> Dict[str, Any]:
-        """
-        Call OpenAI Responses API with function calling and return parsed persona dict with metadata.
-        
-        Args:
-            api_input: List of message dictionaries for the API call
-            max_output_tokens: Maximum tokens for the response
-            reasoning_effort: Reasoning effort level for the model (default: "low")
-        """
-        # Record start time
-        start_time = time.time()
-        
-        try:
-            # Responses API requires flattened tool structure
-            resp = self._client.responses.create(
-                model=self.model,
-                input=api_input,
-                max_output_tokens=max_output_tokens,
-                reasoning={"effort": reasoning_effort},
-                tools=[{
-                    "type": "function",
-                    "name": self._function_def["name"],
-                    "description": self._function_def["description"],
-                    "parameters": self._function_def["parameters"]
-                }],
-                tool_choice={"type": "function", "name": self._function_def["name"]},
-            )
-
-            # Calculate response time
-            response_time = time.time() - start_time
-
-            # Extract the function call arguments from the OpenAI Responses API response
-            tools = getattr(resp, "tools", None)
-            if not tools or len(tools) == 0:
-                raise ValueError("Model did not perform a function call. Check prompts and model.")
-
-            # Iterate through the list of outputs and extract the arguments
-            arguments_str = None
-            outputs = getattr(resp, "output", None)
-            if outputs and isinstance(outputs, list):
-                for output in outputs:
-                    args = getattr(output, "arguments", None)
-                    if args:
-                        arguments_str = args
-                        break
-            else:
-                # Fallback for single output object (legacy or unexpected structure)
-                arguments_str = resp.output.arguments
-
-            if not arguments_str:
-                raise ValueError("No function call arguments found in model response.")
-
-            try:
-                persona_data = json.loads(arguments_str)
-            except json.JSONDecodeError as e:
-                raise ValueError(f"Function call returned invalid JSON: {arguments_str}") from e
-
-            # Extract token usage
-            usage = resp.usage
-            token_info = {
-                "input_tokens": usage.input_tokens if usage else None,
-                "output_tokens": usage.output_tokens if usage else None,
-                "total_tokens": usage.total_tokens if usage else None
-            }
-
-            # Build metadata
-            metadata = {
-                "response_time": round(response_time, 3),
-                "model": self.model,
-                "tokens": token_info,
-                "operation_type": "persona_generation"
-            }
-
-            return {
-                "persona": persona_data,
-                "metadata": metadata
-            }
-
-        except Exception as e:
-            # Calculate response time even if there's an error
-            response_time = time.time() - start_time
-            raise Exception(f"OpenAI API call failed after {round(response_time, 3)}s: {str(e)}")
 
     # --------- Public API ---------
-    def generate(
+    def generate_persona_with_opening_line(
         self,
-        user_input: str,    
+        user_input: str,
+        context: Optional[str] = None,
         recommend_llm_prompt_injection: Optional[str] = None,
         extra_guidelines: Optional[List[str]] = None,
         clean_with_validator: bool = False,
@@ -249,81 +101,158 @@ class PersonaGenerator:
         reasoning_effort: Optional[str] = "low",
     ) -> Dict[str, Any]:
         """
-        Generate a persona dict from user_input, validate it with PersonaValidator,
-        and optionally clean it via validator.clean_persona before returning.
-
+        Generate both a persona and an opening line from a user description.
+        
         Args:
-            user_input: Free-form user description.
+            user_input: Free-form user description of the desired persona.
+            context: Optional context for the conversation (e.g., "at a coffee shop").
             recommend_llm_prompt_injection: Optional extra instruction to include.
             extra_guidelines: Optional extra system instructions.
             clean_with_validator: If True, run PersonaValidator.clean_persona() before returning.
+            max_output_tokens: Maximum tokens for the response.
+            reasoning_effort: Reasoning effort level for the model (default: "low").
             
         Returns:
             Dictionary containing:
                 - persona: The generated persona data
-                - metadata: Information about the generation process including timing and token usage
+                - opening_line: The generated opening line for conversation
+                - metadata: Combined metadata from both operations
         """
-        api_input = self._build_api_input(
-            user_input=user_input,
-            recommend_llm_prompt_injection=recommend_llm_prompt_injection,
-            extra_guidelines=extra_guidelines,
-        )
+        # Record start time for the entire operation
+        start_time = time.time()
         
-        result = self._call_openai_function(
-            api_input=api_input,
-            max_output_tokens=max_output_tokens,
-            reasoning_effort=reasoning_effort
-        )
-        persona = result["persona"]
-        metadata = result["metadata"]
-
-        # Validate via PersonaValidator (raises ValueError if invalid)
-        self._validator.validate_persona(persona)
-
-        # Optional cleaning step using the same validator
-        if clean_with_validator:
-            persona = self._validator.clean_persona(persona)
-            # Update metadata to indicate cleaning was performed
-            metadata["cleaned_with_validator"] = True
-        else:
-            metadata["cleaned_with_validator"] = False
-
-        return {
-            "persona": persona,
-            "metadata": metadata
-        }
-
-
-
-    def generate_with_metadata(
-        self,
-        user_input: str,    
-        recommend_llm_prompt_injection: Optional[str] = None,
-        extra_guidelines: Optional[List[str]] = None,
-        clean_with_validator: bool = False,
-        max_output_tokens: int = MAX_OUTPUT_TOKENS,
-        reasoning_effort: Optional[str] = "low",
-    ) -> Dict[str, Any]:
-        """
-        Generate a persona dict and return both persona and metadata.
-        This method provides explicit access to the full result with metadata.
-        
-        Args:
-            user_input: Free-form user description.
-            recommend_llm_prompt_injection: Optional extra instruction to include.
-            extra_guidelines: Optional extra system instructions.
-            clean_with_validator: If True, run PersonaValidator.clean_persona() before returning.
-            
-        Returns:
-            Dictionary containing:
-                - persona: The generated persona data
-                - metadata: Information about the generation process including timing and token usage
-        """
-        return self.generate(
+        # Generate persona using the JSON generator
+        persona_result = self._persona_generator.generate(
             user_input=user_input,
             recommend_llm_prompt_injection=recommend_llm_prompt_injection,
             extra_guidelines=extra_guidelines,
             clean_with_validator=clean_with_validator,
             max_output_tokens=max_output_tokens,
-            reasoning_effort=reasoning_effort,
+            reasoning_effort=reasoning_effort
+        )
+        
+        # Generate opening line using the conversation generator
+        opening_result = self._conversation_generator.generate_opening_line(
+            persona=persona_result["persona"],
+            context=context,
+            max_output_tokens=max_output_tokens
+        )
+        
+        # Calculate total response time
+        total_response_time = time.time() - start_time
+        
+        # Combine metadata from both operations
+        combined_metadata = {
+            "total_response_time": round(total_response_time, 3),
+            "persona_generation": persona_result["metadata"],
+            "opening_line_generation": opening_result["metadata"],
+            "operation_type": "unified_persona_generation"
+        }
+        
+        return {
+            "persona": persona_result["persona"],
+            "opening_line": opening_result["opening_line"],
+            "metadata": combined_metadata
+        }
+
+    def generate_persona_only(
+        self,
+        user_input: str,
+        recommend_llm_prompt_injection: Optional[str] = None,
+        extra_guidelines: Optional[List[str]] = None,
+        clean_with_validator: bool = False,
+        max_output_tokens: int = MAX_OUTPUT_TOKENS,
+        reasoning_effort: Optional[str] = "low",
+    ) -> Dict[str, Any]:
+        """
+        Generate only a persona (without opening line) from a user description.
+        This provides access to the original persona generation functionality.
+        
+        Args:
+            user_input: Free-form user description of the desired persona.
+            recommend_llm_prompt_injection: Optional extra instruction to include.
+            extra_guidelines: Optional extra system instructions.
+            clean_with_validator: If True, run PersonaValidator.clean_persona() before returning.
+            max_output_tokens: Maximum tokens for the response.
+            reasoning_effort: Reasoning effort level for the model (default: "low").
+            
+        Returns:
+            Dictionary containing:
+                - persona: The generated persona data
+                - metadata: Information about the generation process
+        """
+        return self._persona_generator.generate(
+            user_input=user_input,
+            recommend_llm_prompt_injection=recommend_llm_prompt_injection,
+            extra_guidelines=extra_guidelines,
+            clean_with_validator=clean_with_validator,
+            max_output_tokens=max_output_tokens,
+            reasoning_effort=reasoning_effort
+        )
+
+    def generate_conversation_response(
+        self,
+        persona: Dict[str, Any],
+        conversation_history: List[Dict[str, str]],
+        context: Optional[str] = None,
+        max_output_tokens: int = MAX_OUTPUT_TOKENS
+    ) -> Dict[str, Any]:
+        """
+        Generate a response in an ongoing conversation based on persona and conversation history.
+        This provides access to the conversation generation functionality.
+        
+        Args:
+            persona: Dictionary containing persona information
+            conversation_history: List of previous messages in format [{"role": "user", "content": "..."}, {"role": "assistant", "content": "..."}]
+            context: Optional context for the conversation (e.g., "at a coffee shop")
+            max_output_tokens: Maximum tokens for the response
+        
+        Returns:
+            Dictionary with conversation_response and metadata
+        """
+        return self._conversation_generator.generate_conversation_response(
+            persona=persona,
+            conversation_history=conversation_history,
+            context=context,
+            max_output_tokens=max_output_tokens
+        )
+
+    # --------- Convenience Methods ---------
+    def generate(
+        self,
+        user_input: str,
+        context: Optional[str] = None,
+        recommend_llm_prompt_injection: Optional[str] = None,
+        extra_guidelines: Optional[List[str]] = None,
+        clean_with_validator: bool = False,
+        max_output_tokens: int = MAX_OUTPUT_TOKENS,
+        reasoning_effort: Optional[str] = "low",
+    ) -> Dict[str, Any]:
+        """
+        Main generation method that creates both persona and opening line.
+        This is the primary method for the unified generator.
+        
+        Args:
+            user_input: Free-form user description of the desired persona.
+            context: Optional context for the conversation (e.g., "at a coffee shop").
+            recommend_llm_prompt_injection: Optional extra instruction to include.
+            extra_guidelines: Optional extra system instructions.
+            clean_with_validator: If True, run PersonaValidator.clean_persona() before returning.
+            max_output_tokens: Maximum tokens for the response.
+            reasoning_effort: Reasoning effort level for the model (default: "low").
+            
+        Returns:
+            Dictionary containing:
+                - persona: The generated persona data
+                - opening_line: The generated opening line for conversation
+                - metadata: Combined metadata from both operations
+        """
+        return self.generate_persona_with_opening_line(
+            user_input=user_input,
+            context=context,
+            recommend_llm_prompt_injection=recommend_llm_prompt_injection,
+            extra_guidelines=extra_guidelines,
+            clean_with_validator=clean_with_validator,
+            max_output_tokens=max_output_tokens,
+            reasoning_effort=reasoning_effort
         )

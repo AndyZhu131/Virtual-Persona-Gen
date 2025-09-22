@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { demoPersonas } from "@/lib/demos";
 
 type Msg = { role: "user" | "assistant"; content: string };
 type Body = { personaId: string; messages: Msg[] };
@@ -18,14 +19,22 @@ export async function POST(req: Request) {
       content: msg.content
     }));
 
-    // For now, we'll use a mock persona since we don't have persona storage yet
-    // In a real implementation, you'd fetch the persona by ID from your database
-    const mockPersona = {
-      id: personaId,
-      name: "AI Assistant",
-      description: "A helpful AI assistant",
-      personality: "Friendly and helpful",
-      communication_style: "Conversational and engaging"
+    // Find the persona from demo data
+    const persona = demoPersonas.find(p => p.id === personaId);
+    if (!persona) {
+      return NextResponse.json({ error: "Persona not found" }, { status: 404 });
+    }
+
+    // Map the demo persona to the format expected by the backend
+    const backendPersona = {
+      id: persona.id,
+      name: persona.name,
+      description: persona.description,
+      role: persona.schema?.personality || "assistant",
+      tone: persona.schema?.tone || "friendly",
+      traits: persona.schema?.traits || ["helpful"],
+      dialogue_behavior: persona.schema?.style || "conversational",
+      quirks: persona.schema?.expertise || []
     };
 
     // Call the Python backend
@@ -35,7 +44,7 @@ export async function POST(req: Request) {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        persona: mockPersona,
+        persona: backendPersona,
         conversation_history: conversationHistory,
         max_output_tokens: 500
       }),
