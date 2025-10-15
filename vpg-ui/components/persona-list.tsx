@@ -1,7 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { Persona } from '@/lib/types';
 
@@ -40,17 +39,8 @@ function NavItem({ href, children, isActive = false, icon }: NavItemProps) {
 export default function PersonaList({ items, onSelect, onCreate, onSearch }: PersonaListProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [userEmail, setUserEmail] = useState<string | null>(null);
   const [selectedPersona, setSelectedPersona] = useState<Persona | null>(null);
-  const supabase = createClientComponentClient();
-
-  useEffect(() => {
-    const getUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      setUserEmail(user?.email || null);
-    };
-    getUser();
-  }, [supabase]);
+  const router = useRouter();
 
   const handleSearch = (query: string) => {
     setSearchQuery(query);
@@ -100,13 +90,8 @@ export default function PersonaList({ items, onSelect, onCreate, onSearch }: Per
         
         {/* Create Button */}
         <button
-          onClick={onCreate}
-          disabled={!userEmail}
-          className={`w-full px-3 py-2 rounded-lg transition-colors flex items-center gap-2 justify-center ${
-            userEmail
-              ? 'bg-[var(--color-sidebarDark)] text-[var(--color-textPrimary)] hover:bg-[var(--color-sidebarHighlight)]'
-              : 'bg-[var(--color-sidebarDark)] text-[var(--color-textSecondary)] cursor-not-allowed'
-          }`}
+          onClick={() => router.push('/personas/new')}
+          className="w-full px-3 py-2 rounded-lg transition-colors flex items-center gap-2 justify-center bg-[var(--color-sidebarDark)] text-[var(--color-textPrimary)] hover:bg-[var(--color-sidebarHighlight)]"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -200,11 +185,11 @@ export default function PersonaList({ items, onSelect, onCreate, onSearch }: Per
       <div className="p-4 border-t border-[var(--color-border)]">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 bg-[var(--color-purple)] rounded-full flex items-center justify-center text-white text-sm font-medium">
-            {userEmail ? userEmail.charAt(0).toUpperCase() : 'U'}
+            V
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-[var(--color-textPrimary)] truncate">
-              {userEmail || 'User'}
+              VPG User
             </p>
           </div>
           <button className="text-[var(--color-textSecondary)] hover:text-[var(--color-textPrimary)]">

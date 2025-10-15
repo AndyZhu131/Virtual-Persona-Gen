@@ -1,10 +1,9 @@
 import { NextResponse } from "next/server";
 import { demoPersonas } from "@/lib/demos";
+import { backendApi } from "@/services/api";
 
 type Msg = { role: "user" | "assistant"; content: string };
 type Body = { personaId: string; messages: Msg[] };
-
-const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:8000";
 
 export async function POST(req: Request) {
   const { personaId, messages } = (await req.json()) as Body;
@@ -37,27 +36,16 @@ export async function POST(req: Request) {
       quirks: persona.schema?.expertise || []
     };
 
-    // Call the Python backend
-    const response = await fetch(`${BACKEND_URL}/conversation/respond`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        persona: backendPersona,
-        conversation_history: conversationHistory,
-        max_output_tokens: 500
-      }),
-    });
-
-    if (!response.ok) {
-      throw new Error(`Backend responded with status: ${response.status}`);
-    }
-
-    const data = await response.json();
+    // Call the Python backend using the centralized API service
+    const data = await backendApi.respondConversation(
+      backendPersona,
+      conversationHistory,
+      undefined, // context
+      500 // max_output_tokens
+    );
     
     return NextResponse.json({ 
-      reply: data.conversation_response || "I'm sorry, I couldn't generate a response." 
+      reply: data.response || "I'm sorry, I couldn't generate a response." 
     });
 
   } catch (error) {

@@ -53,26 +53,33 @@ export default function NewPersonaPage() {
     setError(null);
 
     try {
-      const response = await fetch('/api/personas', {
+      const response = await fetch('/api/create', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ prompt: prompt.trim() }),
+        body: JSON.stringify({ 
+          prompt: prompt.trim(),
+          max_output_tokens: 1000,
+          reasoning_effort: 'high'
+        }),
       });
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+        throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
       }
 
       const data = await response.json();
       
-      if (data.id) {
-        // Navigate to the new persona page
-        router.push(`/personas/${data.id}`);
+      if (data.persona) {
+        // Show the generated persona data
+        console.log('Generated persona:', data.persona);
+        setError(null);
+        // For now, just show success message since we're not saving to DB
+        alert('Persona generated successfully! Check console for details.');
       } else {
-        throw new Error('No persona ID returned from server');
+        throw new Error('No persona data returned from server');
       }
     } catch (err) {
       console.error('Error creating persona:', err);

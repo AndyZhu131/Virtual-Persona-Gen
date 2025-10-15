@@ -52,7 +52,7 @@ async def create_persona(request: Dict[str, Any]):
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-@app.post("/conversation/start")
+@app.post("/persona/start")
 async def start_conversation(request: Dict[str, Any]):
     """Generate a persona and opening line for a new conversation using unified generator"""
     try:

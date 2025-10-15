@@ -67,28 +67,8 @@ export default function AppPage() {
   };
 
   // Callback functions
-  const createPersona = async (): Promise<void> => {
-    if (!userId) return;
-    
-    const newPersona = {
-      name: "New Persona",
-      description: "",
-      schema: {},
-      owner_id: userId
-    };
-
-    const { data, error } = await supabase
-      .from("personas")
-      .insert(newPersona)
-      .select()
-      .single();
-
-    if (!error && data) {
-      const persona = data as Persona;
-      setMyPersonas(prev => [persona, ...prev]);
-      // Navigate to edit page for the new persona
-      router.push(`/personas/${persona.id}/edit`);
-    }
+  const createPersona = (): void => {
+    router.push('/personas/new');
   };
 
   const createFromTemplate = async (template: NewPersona): Promise<void> => {
